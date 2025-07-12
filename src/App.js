@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, updatePassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, addDoc, updateDoc } from 'firebase/firestore';
 
 // ==================================================================================
@@ -232,12 +232,12 @@ const CreatorDashboard = ({ user }) => {
 
     const renderPage = () => {
         switch (activePage) {
-            case 'overview': return <DashboardOverview creatorData={creatorData} />;
+            case 'overview': return <DashboardOverview creatorData={creatorData} setActivePage={setActivePage} />;
             case 'events': return <EventsPage user={user} />;
             case 'upload': return <UploadPage user={user} />;
             case 'finance': return <PlaceholderPage title="Financeiro" />;
             case 'account': return <AccountPage user={user} creatorData={creatorData} />;
-            default: return <DashboardOverview creatorData={creatorData} />;
+            default: return <DashboardOverview creatorData={creatorData} setActivePage={setActivePage} />;
         }
     };
 
@@ -270,14 +270,16 @@ const Sidebar = ({ activePage, setActivePage, handleSignOut }) => {
     );
 };
 
-const DashboardOverview = ({ creatorData }) => {
-    const activityFeed = [
-        { icon: 'sale', text: "Venda realizada! (Foto IMG_7812.JPG)", time: "Hoje, 15:02" },
-        { icon: 'upload', text: "15 mídias enviadas para 'Trilha do Desafio'.", time: "Ontem, 11:34" },
+const DashboardOverview = ({ creatorData, setActivePage }) => {
+    const salesFeed = [
+        { id: 1, text: "Venda da foto IMG_7812.JPG", time: "Hoje, 15:02" },
+        { id: 2, text: "Venda do vídeo DJI_0025.MP4", time: "Ontem, 09:12" },
+        { id: 3, text: "Venda da foto IMG_7813.JPG", time: "2 dias atrás" },
+        { id: 4, text: "Venda da foto IMG_7814.JPG", time: "2 dias atrás" },
+        { id: 5, text: "Venda do vídeo FINAL_TRILHA.MP4", time: "3 dias atrás" },
     ];
     const icons = {
         sale: <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.09,8.59L17.5,10L11,16.5Z" /></svg>,
-        upload: <svg viewBox="0 0 24 24"><path d="M14,13V17H10V13H7L12,8L17,13H14M19.35,10.04C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.04C2.34,8.36 0,10.91 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.04Z" /></svg>,
     };
 
     return (
@@ -295,19 +297,20 @@ const DashboardOverview = ({ creatorData }) => {
                     <div className="bg-[#1e1e1e] p-8 rounded-lg">
                         <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider mt-0 mb-5">Ações Rápidas</h2>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <a href="#" className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" /></svg> Fazer Novo Upload</a>
-                            <a href="#" className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M20.55,4.85L21.5,5.8L20.25,7.05L19.3,6.1M18.6,6.8L19.55,7.75L12.75,14.55L11.8,13.6M6,13.5L11.1,18.6C11.3,18.8 11.5,18.9 11.75,18.9H12V21H2V11H4.1C4.1,11.25 4.2,11.5 4.4,11.7L9.5,16.85L16.3,10L17.25,10.95L18.2,10M4,9V5A2,2 0 0,1 6,3H14A2,2 0 0,1 16,5V9H4Z" /></svg> Gerenciar Eventos</a>
+                            <a href="#" onClick={(e) => {e.preventDefault(); setActivePage('upload')}} className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" /></svg> Fazer Novo Upload</a>
+                            <a href="#" onClick={(e) => {e.preventDefault(); setActivePage('events')}} className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M20.55,4.85L21.5,5.8L20.25,7.05L19.3,6.1M18.6,6.8L19.55,7.75L12.75,14.55L11.8,13.6M6,13.5L11.1,18.6C11.3,18.8 11.5,18.9 11.75,18.9H12V21H2V11H4.1C4.1,11.25 4.2,11.5 4.4,11.7L9.5,16.85L16.3,10L17.25,10.95L18.2,10M4,9V5A2,2 0 0,1 6,3H14A2,2 0 0,1 16,5V9H4Z" /></svg> Gerenciar Eventos</a>
                         </div>
                     </div>
                 </div>
-                <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                <div className="bg-[#1e1e1e] p-8 rounded-lg flex flex-col">
                     <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider mt-0 mb-5">Atividade Recente</h2>
-                    <ul>{activityFeed.map((item, index) => (
-                        <li key={index} className="flex items-center gap-4 py-3 border-b border-[#333] last:border-b-0">
-                            <div className="bg-[#333] rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"><svg className="w-5 h-5 fill-current text-[#B3B3B3]" viewBox="0 0 24 24">{icons[item.icon]}</svg></div>
-                            <div><p className="m-0">{item.text}</p><p className="text-xs text-[#B3B3B3] m-0">{item.time}</p></div>
+                    <ul className="flex-grow space-y-2">{salesFeed.map((item) => (
+                        <li key={item.id} className="flex items-center gap-4 py-2">
+                            <div className="bg-[#333] rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"><svg className="w-5 h-5 fill-current text-[#B3B3B3]" viewBox="0 0 24 24">{icons.sale}</svg></div>
+                            <div><p className="m-0 leading-tight">{item.text}</p><p className="text-xs text-[#B3B3B3] m-0">{item.time}</p></div>
                         </li>
                     ))}</ul>
+                    <button onClick={() => setActivePage('finance')} className="mt-4 w-full text-center text-[#FF4500] font-semibold hover:underline">Ver todas as vendas</button>
                 </div>
             </div>
             <style jsx>{`
@@ -435,6 +438,7 @@ const CreateEventModal = ({ user, onClose, onEventCreated }) => {
 
 const AccountPage = ({ user, creatorData }) => {
     const [accountData, setAccountData] = useState(creatorData);
+    const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -448,6 +452,7 @@ const AccountPage = ({ user, creatorData }) => {
 
     return (
         <div className="flex flex-col flex-grow">
+            {isPasswordModalOpen && <ChangePasswordModal user={user} onClose={() => setIsPasswordModalOpen(false)} />}
             <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider mb-8">Minha Conta</h1>
             <div className="max-w-4xl mx-auto space-y-8 w-full">
                 <div className="bg-[#1e1e1e] p-8 rounded-lg">
@@ -456,12 +461,87 @@ const AccountPage = ({ user, creatorData }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">Nome Completo</label><input id="fullname" type="text" value={accountData.fullname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">Apelido / Nome de Exibição</label><input id="nickname" type="text" value={accountData.nickname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
-                            <div><label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label><input type="email" value={accountData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/></div>
+                            <div className="relative">
+                                <label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label>
+                                <input type="email" value={accountData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/>
+                                <button type="button" onClick={() => setIsPasswordModalOpen(true)} className="absolute left-0 bottom-[-28px] text-xs text-[#FF4500] hover:underline">Alterar Senha</button>
+                            </div>
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">WhatsApp</label><input id="whatsapp" type="tel" value={accountData.whatsapp} onChange={handleWhatsAppChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                         </div>
                         <div className="text-right pt-4"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button></div>
                     </form>
                 </div>
+            </div>
+        </div>
+    );
+};
+
+const ChangePasswordModal = ({ user, onClose }) => {
+    const [passwords, setPasswords] = useState({ current: '', new: '', confirm: '' });
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setPasswords(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+
+        if (!passwords.current || !passwords.new || !passwords.confirm) {
+            setError('Todos os campos são obrigatórios.');
+            return;
+        }
+        if (passwords.new.length < 8) {
+            setError('A nova senha deve ter pelo menos 8 caracteres.');
+            return;
+        }
+        if (passwords.new !== passwords.confirm) {
+            setError('As novas senhas não conferem.');
+            return;
+        }
+
+        setIsLoading(true);
+
+        try {
+            const credential = EmailAuthProvider.credential(user.email, passwords.current);
+            await reauthenticateWithCredential(user, credential);
+            await updatePassword(user, passwords.new);
+            setSuccess('Senha alterada com sucesso!');
+            setTimeout(() => {
+                onClose();
+            }, 2000);
+        } catch (err) {
+            console.error("Erro ao alterar senha:", err);
+            if (err.code === 'auth/wrong-password') {
+                setError('A senha atual está incorreta.');
+            } else {
+                setError('Ocorreu um erro ao alterar a senha.');
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+            <div className="bg-[#1e1e1e] p-8 rounded-lg w-full max-w-md">
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Alterar Senha</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div><label className="block text-sm text-[#B3B3B3] mb-2">Senha Atual</label><input type="password" id="current" value={passwords.current} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                    <div><label className="block text-sm text-[#B3B3B3] mb-2">Nova Senha</label><input type="password" id="new" value={passwords.new} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                    <div><label className="block text-sm text-[#B3B3B3] mb-2">Confirmar Nova Senha</label><input type="password" id="confirm" value={passwords.confirm} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    {success && <p className="text-green-500 text-sm">{success}</p>}
+                    <div className="flex justify-end gap-4 pt-4">
+                        <button type="button" onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button>
+                        <button type="submit" disabled={isLoading} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50">{isLoading ? 'Salvando...' : 'Salvar'}</button>
+                    </div>
+                </form>
             </div>
         </div>
     );

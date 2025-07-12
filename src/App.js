@@ -36,12 +36,9 @@ const useAuth = () => {
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            // Apenas considera o usuário logado se o e-mail for verificado
-            if (user && user.emailVerified) {
-                setUser(user);
-            } else {
-                setUser(null);
-            }
+            // ALTERAÇÃO: Removemos a verificação de e-mail por enquanto.
+            // Agora, qualquer usuário logado é considerado válido.
+            setUser(user);
             setLoading(false);
         });
         return () => unsubscribe();
@@ -92,16 +89,9 @@ const LoginPage = ({ navigateToSignUp }) => {
         setIsLoading(true);
         setNotification({ message: '', type: '' });
         try {
-            const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
-            
-            // MELHORIA: Verifica se o e-mail foi validado
-            if (!userCredential.user.emailVerified) {
-                await signOut(auth); // Desloga o usuário se o e-mail não for verificado
-                setNotification({ message: 'Seu e-mail ainda não foi verificado. Por favor, verifique sua caixa de entrada e o spam.', type: 'error' });
-                setIsLoading(false);
-                return;
-            }
-            // Se verificado, o onAuthStateChanged no App vai cuidar do resto.
+            // ALTERAÇÃO: A verificação de e-mail foi removida daqui.
+            // O login agora funcionará imediatamente.
+            await signInWithEmailAndPassword(auth, formData.email, formData.password);
         } catch (error) {
             console.error("Erro no login:", error);
             setNotification({ message: 'E-mail ou senha inválidos.', type: 'error' });
@@ -171,7 +161,7 @@ const SignUpPage = ({ navigateToLogin, navigateToTerms }) => {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
             
-            // MELHORIA: Envia o e-mail de verificação
+            // O e-mail ainda é enviado, mas não bloquearemos o login por causa dele
             await sendEmailVerification(user);
 
             await setDoc(doc(db, "creators", user.uid), {
@@ -180,11 +170,12 @@ const SignUpPage = ({ navigateToLogin, navigateToTerms }) => {
                 createdAt: serverTimestamp()
             });
             
-            setNotification({ message: 'Cadastro realizado! Um link de verificação foi enviado para o seu e-mail. Verifique sua caixa de entrada e spam antes de fazer login.', type: 'success' });
+            // ALTERAÇÃO: Mensagem de sucesso direta
+            setNotification({ message: 'Cadastro realizado com sucesso! Redirecionando para o login...', type: 'success' });
             setTimeout(() => {
                 setIsLoading(false);
                 navigateToLogin(); 
-            }, 4000); // Mais tempo para o usuário ler a mensagem
+            }, 2000);
         } catch (error) {
             console.error("Erro no cadastro:", error);
             let msg = 'Ocorreu um erro ao realizar o cadastro.';
@@ -248,6 +239,7 @@ const TermsPage = ({ navigateBack }) => {
         </div>
     );
 };
+
 
 // ==================================================================================
 // COMPONENTES DO PAINEL DO CRIADOR

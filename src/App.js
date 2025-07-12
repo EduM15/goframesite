@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, addDoc, updateDoc } from 'firebase/firestore';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, addDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 
 // ==================================================================================
 // CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE
@@ -155,6 +155,7 @@ const SignUpPage = ({ navigateToLogin, navigateToTerms }) => {
             await setDoc(doc(db, "creators", user.uid), {
                 uid: user.uid, fullname: formData.fullname, nickname: formData.nickname,
                 whatsapp: formData.whatsapp, email: formData.email, role: 'creator',
+                defaultPhotoPrice: 10.00, defaultVideoPrice: 15.00,
                 createdAt: serverTimestamp()
             });
             setNotification({ message: 'Cadastro realizado com sucesso! Redirecionando para o login...', type: 'success' });
@@ -348,6 +349,12 @@ const EventsPage = ({ user }) => {
         fetchEvents();
         setIsModalOpen(false);
     };
+    
+    const handleDelete = async (eventId) => {
+        // A confirmação é feita no componente do botão agora
+        await deleteDoc(doc(db, "events", eventId));
+        fetchEvents();
+    };
 
     return (
         <div className="flex flex-col flex-grow">
@@ -364,7 +371,7 @@ const EventsPage = ({ user }) => {
                             <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Nome do Evento</th>
                             <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Data</th>
                             <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Status</th>
-                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Ações</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase text-right">Ações</th>
                         </tr>
                     </thead>
                     <tbody>{events.length > 0 ? events.map((event) => (
@@ -372,7 +379,10 @@ const EventsPage = ({ user }) => {
                             <td className="p-4">{event.name}</td>
                             <td className="p-4">{new Date(event.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
                             <td className="p-4"><span className={`px-3 py-1 text-xs font-bold rounded-full bg-green-500 text-white`}>Ativo</span></td>
-                            <td className="p-4 flex gap-2">{/* Action buttons here */}</td>
+                            <td className="p-4 flex gap-2 justify-end">
+                                <button className="p-2 rounded-md hover:bg-gray-700"><svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18,2.9 17.35,2.9 16.96,3.29L15.12,5.12L18.87,8.87M3,17.25V21H6.75L17.81,9.93L14.06,6.18L3,17.25Z"/></svg></button>
+                                <DeleteButton onDelete={() => handleDelete(event.id)} />
+                            </td>
                         </tr>
                     )) : <tr><td colSpan="4" className="text-center p-8 text-gray-500">Nenhum evento criado ainda.</td></tr>}</tbody>
                 </table>
@@ -382,16 +392,41 @@ const EventsPage = ({ user }) => {
     );
 };
 
+const DeleteButton = ({ onDelete }) => {
+    const [showConfirm, setShowConfirm] = useState(false);
+
+    const handleDeleteClick = () => {
+        if (showConfirm) {
+            onDelete();
+            setShowConfirm(false);
+        } else {
+            setShowConfirm(true);
+            setTimeout(() => setShowConfirm(false), 3000); // O botão de confirmação some após 3 segundos
+        }
+    };
+
+    return (
+        <button onClick={handleDeleteClick} className={`p-2 rounded-md transition-colors ${showConfirm ? 'bg-red-600 text-white' : 'hover:bg-red-600'}`}>
+            {showConfirm ? 'Confirmar?' : <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"/></svg>}
+        </button>
+    );
+};
+
+
 const CreateEventModal = ({ user, onClose, onEventCreated }) => {
-    const [eventName, setEventName] = useState('');
-    const [eventDate, setEventDate] = useState('');
+    const [eventData, setEventData] = useState({ name: '', date: '', description: '', thumbnailUrl: '' });
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setEventData(prev => ({ ...prev, [id]: value }));
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (!eventName || !eventDate) {
-            setError('Por favor, preencha todos os campos.');
+        if (!eventData.name || !eventData.date) {
+            setError('Nome e data do evento são obrigatórios.');
             return;
         }
         setIsLoading(true);
@@ -399,8 +434,10 @@ const CreateEventModal = ({ user, onClose, onEventCreated }) => {
         try {
             await addDoc(collection(db, "events"), {
                 creatorId: user.uid,
-                name: eventName,
-                date: eventDate,
+                name: eventData.name,
+                date: eventData.date,
+                description: eventData.description,
+                thumbnailUrl: eventData.thumbnailUrl,
                 status: 'active',
                 createdAt: serverTimestamp()
             });
@@ -413,18 +450,14 @@ const CreateEventModal = ({ user, onClose, onEventCreated }) => {
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4">
             <div className="bg-[#1e1e1e] p-8 rounded-lg w-full max-w-md">
                 <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Criar Novo Evento</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="block text-sm text-[#B3B3B3] mb-2">Nome do Evento</label>
-                        <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/>
-                    </div>
-                    <div>
-                        <label className="block text-sm text-[#B3B3B3] mb-2">Data do Evento</label>
-                        <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/>
-                    </div>
+                    <div><label htmlFor="name" className="block text-sm text-[#B3B3B3] mb-2">Nome do Evento</label><input id="name" type="text" value={eventData.name} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                    <div><label htmlFor="date" className="block text-sm text-[#B3B3B3] mb-2">Data do Evento</label><input id="date" type="date" value={eventData.date} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                    <div><label htmlFor="description" className="block text-sm text-[#B3B3B3] mb-2">Descrição (Opcional)</label><textarea id="description" value={eventData.description} onChange={handleChange} rows="3" className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"></textarea></div>
+                    <div><label htmlFor="thumbnailUrl" className="block text-sm text-[#B3B3B3] mb-2">URL da Miniatura (Opcional)</label><input id="thumbnailUrl" type="text" value={eventData.thumbnailUrl} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                     {error && <p className="text-red-500 text-sm">{error}</p>}
                     <div className="flex justify-end gap-4 pt-4">
                         <button type="button" onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button>
@@ -437,8 +470,21 @@ const CreateEventModal = ({ user, onClose, onEventCreated }) => {
 };
 
 const AccountPage = ({ user, creatorData }) => {
-    const [accountData, setAccountData] = useState(creatorData);
+    const [accountData, setAccountData] = useState({
+        ...creatorData,
+        defaultPhotoPrice: creatorData.defaultPhotoPrice || 10,
+        defaultVideoPrice: creatorData.defaultVideoPrice || 15,
+    });
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+    
+    const handlePriceChange = (e) => {
+        const { id, value } = e.target;
+        let price = parseFloat(value);
+        if (isNaN(price) || price < 10) {
+            price = 10;
+        }
+        setAccountData(prev => ({ ...prev, [id]: price }));
+    };
 
     const handleChange = (e) => {
         const { id, value } = e.target;
@@ -461,16 +507,23 @@ const AccountPage = ({ user, creatorData }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">Nome Completo</label><input id="fullname" type="text" value={accountData.fullname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">Apelido / Nome de Exibição</label><input id="nickname" type="text" value={accountData.nickname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
-                            <div>
-                                <label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label>
-                                <input type="email" value={accountData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/>
-                            </div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label><input type="email" value={accountData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/></div>
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">WhatsApp</label><input id="whatsapp" type="tel" value={accountData.whatsapp} onChange={handleWhatsAppChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                         </div>
                         <div className="flex justify-between items-center pt-4">
                             <button type="button" onClick={() => setIsPasswordModalOpen(true)} className="text-sm text-[#FF4500] hover:underline">Alterar Senha</button>
                             <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar Informações</button>
                         </div>
+                    </form>
+                </div>
+                 <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                    <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Preços Padrão</h2>
+                    <form className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label htmlFor="defaultPhotoPrice" className="block text-sm text-[#B3B3B3] mb-2">Preço Padrão - Foto (mín. R$ 10)</label><input id="defaultPhotoPrice" type="number" min="10" step="0.01" value={accountData.defaultPhotoPrice} onChange={handlePriceChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label htmlFor="defaultVideoPrice" className="block text-sm text-[#B3B3B3] mb-2">Preço Padrão - Vídeo (mín. R$ 10)</label><input id="defaultVideoPrice" type="number" min="10" step="0.01" value={accountData.defaultVideoPrice} onChange={handlePriceChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                        </div>
+                        <div className="text-right pt-4"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar Preços</button></div>
                     </form>
                 </div>
             </div>
@@ -493,44 +546,27 @@ const ChangePasswordModal = ({ user, onClose }) => {
         e.preventDefault();
         setError('');
         setSuccess('');
-
-        if (!passwords.current || !passwords.new || !passwords.confirm) {
-            setError('Todos os campos são obrigatórios.');
-            return;
-        }
-        if (passwords.new.length < 8) {
-            setError('A nova senha deve ter pelo menos 8 caracteres.');
-            return;
-        }
-        if (passwords.new !== passwords.confirm) {
-            setError('As novas senhas não conferem.');
-            return;
-        }
-
+        if (!passwords.current || !passwords.new || !passwords.confirm) { setError('Todos os campos são obrigatórios.'); return; }
+        if (passwords.new.length < 8) { setError('A nova senha deve ter pelo menos 8 caracteres.'); return; }
+        if (passwords.new !== passwords.confirm) { setError('As novas senhas não conferem.'); return; }
         setIsLoading(true);
-
         try {
             const credential = EmailAuthProvider.credential(user.email, passwords.current);
             await reauthenticateWithCredential(user, credential);
             await updatePassword(user, passwords.new);
             setSuccess('Senha alterada com sucesso!');
-            setTimeout(() => {
-                onClose();
-            }, 2000);
+            setTimeout(() => { onClose(); }, 2000);
         } catch (err) {
             console.error("Erro ao alterar senha:", err);
-            if (err.code === 'auth/wrong-password') {
-                setError('A senha atual está incorreta.');
-            } else {
-                setError('Ocorreu um erro ao alterar a senha.');
-            }
+            if (err.code === 'auth/wrong-password') { setError('A senha atual está incorreta.'); } 
+            else { setError('Ocorreu um erro ao alterar a senha.'); }
         } finally {
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50 p-4">
             <div className="bg-[#1e1e1e] p-8 rounded-lg w-full max-w-md">
                 <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Alterar Senha</h2>
                 <form onSubmit={handleSubmit} className="space-y-4">

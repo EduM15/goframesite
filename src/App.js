@@ -265,7 +265,7 @@ const Sidebar = ({ activePage, setActivePage, handleSignOut }) => {
             <nav className="flex-grow">
                 <ul>{navItems.map(item => (<li key={item.id}><a href="#" onClick={(e) => {e.preventDefault(); setActivePage(item.id)}} className={`flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all ${activePage === item.id ? 'bg-[#FF4500] text-white' : 'hover:bg-[#FF4500] hover:text-white'}`}><svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24">{item.icon}</svg>{item.label}</a></li>))}</ul>
             </nav>
-            <div><a href="#" onClick={handleSignOut} className="flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all hover:bg-[#FF4500] hover:text-white"><svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24"><path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/></svg>Sair</a></div>
+            <div><a href="#" onClick={handleSignOut} className="flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all hover:bg-red-600 hover:text-white"><svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24"><path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/></svg>Sair</a></div>
         </aside>
     );
 };
@@ -461,14 +461,16 @@ const AccountPage = ({ user, creatorData }) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">Nome Completo</label><input id="fullname" type="text" value={accountData.fullname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">Apelido / Nome de Exibição</label><input id="nickname" type="text" value={accountData.nickname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
-                            <div className="relative">
+                            <div>
                                 <label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label>
                                 <input type="email" value={accountData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/>
-                                <button type="button" onClick={() => setIsPasswordModalOpen(true)} className="absolute left-0 bottom-[-28px] text-xs text-[#FF4500] hover:underline">Alterar Senha</button>
                             </div>
                             <div><label className="block text-sm text-[#B3B3B3] mb-2">WhatsApp</label><input id="whatsapp" type="tel" value={accountData.whatsapp} onChange={handleWhatsAppChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
                         </div>
-                        <div className="text-right pt-4"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button></div>
+                        <div className="flex justify-between items-center pt-4">
+                            <button type="button" onClick={() => setIsPasswordModalOpen(true)} className="text-sm text-[#FF4500] hover:underline">Alterar Senha</button>
+                            <button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar Informações</button>
+                        </div>
                     </form>
                 </div>
             </div>
@@ -616,7 +618,6 @@ const UploadPage = ({ user }) => {
                     <select id="event" value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)} className="flex-grow p-3 bg-[#121212] border border-[#333] rounded-md text-white text-base">
                         {events.map(event => <option key={event.id} value={event.id}>{event.name}</option>)}
                     </select>
-                    <button className="bg-[#FF4500] text-white font-bold py-3 px-5 rounded-lg hover:bg-[#e03e00] transition-colors">+ Criar Novo Evento</button>
                 </div>
                 <div onDragEnter={handleDragEvents} onDragOver={handleDragEvents} onDragLeave={handleDragEvents} onDrop={handleDrop} className={`border-2 border-dashed rounded-lg p-12 text-center transition-colors cursor-pointer ${isDragging ? 'border-[#FF4500] bg-[#2a2a2a]' : 'border-[#333]'}`} onClick={() => document.getElementById('fileInput').click()}>
                     <input type="file" id="fileInput" multiple onChange={handleFileSelect} className="hidden" accept=".jpg,.jpeg,.png,.mp4"/>

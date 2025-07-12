@@ -417,6 +417,18 @@ const UploadPage = ({ user }) => {
     );
 };
 
+const PlaceholderPage = ({ title }) => (
+    <div className="flex flex-col flex-grow">
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider mb-4">{title}</h1>
+        <div className="bg-[#1e1e1e] p-8 rounded-lg text-center flex-grow flex items-center justify-center">
+            <div>
+                <p className="text-xl text-[#B3B3B3]">Esta página está em construção.</p>
+                <p>Volte em breve para ver as novidades!</p>
+            </div>
+        </div>
+    </div>
+);
+
 // ==================================================================================
 // COMPONENTE PRINCIPAL DA APLICAÇÃO (App.js)
 // ==================================================================================

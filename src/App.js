@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification, updatePassword } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, addDoc, updateDoc } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut, sendEmailVerification } from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc, serverTimestamp, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 // ==================================================================================
 // CONFIGURAÇÃO E INICIALIZAÇÃO DO FIREBASE
@@ -323,8 +323,149 @@ const DashboardOverview = ({ creatorData }) => {
     );
 };
 
-const EventsPage = ({ user }) => { /* ...código da página de Eventos... */ return (<div>Meus Eventos...</div>) };
-const AccountPage = ({ user, creatorData }) => { /* ...código da página Minha Conta... */ return (<div>Minha Conta...</div>) };
+const EventsPage = ({ user }) => {
+    const [events, setEvents] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const fetchEvents = useCallback(async () => {
+        setIsLoading(true);
+        const q = query(collection(db, "events"), where("creatorId", "==", user.uid));
+        const querySnapshot = await getDocs(q);
+        const eventsList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setEvents(eventsList);
+        setIsLoading(false);
+    }, [user]);
+
+    useEffect(() => {
+        fetchEvents();
+    }, [fetchEvents]);
+
+    const handleEventCreated = () => {
+        fetchEvents();
+        setIsModalOpen(false);
+    };
+
+    return (
+        <div className="flex flex-col flex-grow">
+            {isModalOpen && <CreateEventModal user={user} onClose={() => setIsModalOpen(false)} onEventCreated={handleEventCreated} />}
+            <div className="flex justify-between items-center mb-8">
+                <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider">Meus Eventos</h1>
+                <button onClick={() => setIsModalOpen(true)} className="bg-[#FF4500] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 hover:bg-[#e03e00] transition-colors"><svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>Criar Novo Evento</button>
+            </div>
+            <div className="bg-[#1e1e1e] p-8 rounded-lg flex-grow">
+                {isLoading ? <p>Carregando eventos...</p> : (
+                <table className="w-full text-left">
+                    <thead>
+                        <tr>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Nome do Evento</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Data</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Status</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>{events.length > 0 ? events.map((event) => (
+                        <tr key={event.id} className="border-t border-[#333] hover:bg-[#2a2a2a]">
+                            <td className="p-4">{event.name}</td>
+                            <td className="p-4">{new Date(event.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</td>
+                            <td className="p-4"><span className={`px-3 py-1 text-xs font-bold rounded-full bg-green-500 text-white`}>Ativo</span></td>
+                            <td className="p-4 flex gap-2">{/* Action buttons here */}</td>
+                        </tr>
+                    )) : <tr><td colSpan="4" className="text-center p-8 text-gray-500">Nenhum evento criado ainda.</td></tr>}</tbody>
+                </table>
+                )}
+            </div>
+        </div>
+    );
+};
+
+const CreateEventModal = ({ user, onClose, onEventCreated }) => {
+    const [eventName, setEventName] = useState('');
+    const [eventDate, setEventDate] = useState('');
+    const [error, setError] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!eventName || !eventDate) {
+            setError('Por favor, preencha todos os campos.');
+            return;
+        }
+        setIsLoading(true);
+        setError('');
+        try {
+            await addDoc(collection(db, "events"), {
+                creatorId: user.uid,
+                name: eventName,
+                date: eventDate,
+                status: 'active',
+                createdAt: serverTimestamp()
+            });
+            onEventCreated();
+        } catch (err) {
+            console.error("Erro ao criar evento:", err);
+            setError('Ocorreu um erro ao criar o evento.');
+            setIsLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex justify-center items-center z-50">
+            <div className="bg-[#1e1e1e] p-8 rounded-lg w-full max-w-md">
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Criar Novo Evento</h2>
+                <form onSubmit={handleSubmit} className="space-y-4">
+                    <div>
+                        <label className="block text-sm text-[#B3B3B3] mb-2">Nome do Evento</label>
+                        <input type="text" value={eventName} onChange={(e) => setEventName(e.target.value)} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/>
+                    </div>
+                    <div>
+                        <label className="block text-sm text-[#B3B3B3] mb-2">Data do Evento</label>
+                        <input type="date" value={eventDate} onChange={(e) => setEventDate(e.target.value)} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/>
+                    </div>
+                    {error && <p className="text-red-500 text-sm">{error}</p>}
+                    <div className="flex justify-end gap-4 pt-4">
+                        <button type="button" onClick={onClose} className="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg">Cancelar</button>
+                        <button type="submit" disabled={isLoading} className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg disabled:opacity-50">{isLoading ? 'Salvando...' : 'Salvar'}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    );
+};
+
+const AccountPage = ({ user, creatorData }) => {
+    const [accountData, setAccountData] = useState(creatorData);
+
+    const handleChange = (e) => {
+        const { id, value } = e.target;
+        setAccountData(prev => ({ ...prev, [id]: value }));
+    };
+
+    const handleWhatsAppChange = (e) => {
+        e.target.value = formatPhoneNumber(e.target.value);
+        handleChange(e);
+    };
+
+    return (
+        <div className="flex flex-col flex-grow">
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider mb-8">Minha Conta</h1>
+            <div className="max-w-4xl mx-auto space-y-8 w-full">
+                <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                    <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Informações Pessoais</h2>
+                    <form className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Nome Completo</label><input id="fullname" type="text" value={accountData.fullname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Apelido / Nome de Exibição</label><input id="nickname" type="text" value={accountData.nickname} onChange={handleChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label><input type="email" value={accountData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">WhatsApp</label><input id="whatsapp" type="tel" value={accountData.whatsapp} onChange={handleWhatsAppChange} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                        </div>
+                        <div className="text-right pt-4"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 const UploadPage = ({ user }) => {
     const [events, setEvents] = useState([]);

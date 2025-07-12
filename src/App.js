@@ -36,8 +36,6 @@ const useAuth = () => {
     const [loading, setLoading] = useState(true);
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-            // ALTERAÇÃO: Removemos a verificação de e-mail por enquanto.
-            // Agora, qualquer usuário logado é considerado válido.
             setUser(user);
             setLoading(false);
         });
@@ -66,7 +64,7 @@ const AuthPage = () => {
 };
 
 // ==================================================================================
-// COMPONENTE: PÁGINA DE LOGIN
+// COMPONENTES DE AUTENTICAÇÃO (Login, Cadastro, Termos)
 // ==================================================================================
 const LoginPage = ({ navigateToSignUp }) => {
     const [formData, setFormData] = useState({ email: '', password: '' });
@@ -89,8 +87,6 @@ const LoginPage = ({ navigateToSignUp }) => {
         setIsLoading(true);
         setNotification({ message: '', type: '' });
         try {
-            // ALTERAÇÃO: A verificação de e-mail foi removida daqui.
-            // O login agora funcionará imediatamente.
             await signInWithEmailAndPassword(auth, formData.email, formData.password);
         } catch (error) {
             console.error("Erro no login:", error);
@@ -126,9 +122,6 @@ const LoginPage = ({ navigateToSignUp }) => {
     );
 };
 
-// ==================================================================================
-// COMPONENTE: PÁGINA DE CADASTRO
-// ==================================================================================
 const SignUpPage = ({ navigateToLogin, navigateToTerms }) => {
     const [formData, setFormData] = useState({ fullname: '', nickname: '', whatsapp: '', email: '', password: '', passwordConfirm: '', terms: false });
     const [notification, setNotification] = useState({ message: '', type: '' });
@@ -160,17 +153,12 @@ const SignUpPage = ({ navigateToLogin, navigateToTerms }) => {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
             const user = userCredential.user;
-            
-            // O e-mail ainda é enviado, mas não bloquearemos o login por causa dele
             await sendEmailVerification(user);
-
             await setDoc(doc(db, "creators", user.uid), {
                 uid: user.uid, fullname: formData.fullname, nickname: formData.nickname,
                 whatsapp: formData.whatsapp, email: formData.email, role: 'creator',
                 createdAt: serverTimestamp()
             });
-            
-            // ALTERAÇÃO: Mensagem de sucesso direta
             setNotification({ message: 'Cadastro realizado com sucesso! Redirecionando para o login...', type: 'success' });
             setTimeout(() => {
                 setIsLoading(false);
@@ -214,9 +202,6 @@ const SignUpPage = ({ navigateToLogin, navigateToTerms }) => {
     );
 };
 
-// ==================================================================================
-// COMPONENTE: PÁGINA DE TERMOS DE SERVIÇO
-// ==================================================================================
 const TermsPage = ({ navigateBack }) => {
     return (
         <div style={{ fontFamily: "'Poppins', sans-serif" }} className="bg-[#121212] text-white flex justify-center items-center min-h-screen p-5">
@@ -224,13 +209,13 @@ const TermsPage = ({ navigateBack }) => {
                 <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-5xl tracking-wider mb-6 text-center">Termos de <span className="text-[#FF4500]">Serviço</span></h1>
                 <div className="prose prose-invert max-w-none h-96 overflow-y-auto pr-4 text-[#B3B3B3]">
                     <h2 className="text-xl font-bold text-white">1. Visão Geral</h2>
-                    <p>Este é um texto de exemplo para os Termos de Serviço. Em um site real, este conteúdo seria fornecido por um profissional da área jurídica. O texto a seguir é apenas um preenchimento (placeholder).</p>
-                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed non risus. Suspendisse lectus tortor, dignissim sit amet, adipiscing nec, ultricies sed, dolor. Cras elementum ultrices diam. Maecenas ligula massa, varius a, semper congue, euismod non, mi. Proin porttitor, orci nec nonummy molestie, enim est eleifend mi, non fermentum diam nisl sit amet erat. Duis semper. Duis arcu massa, scelerisque vitae, consequat in, pretium a, enim. Pellentesque congue. Ut in risus volutpat libero pharetra tempor. Cras vestibulum bibendum augue. Praesent egestas leo in pede. Praesent blandit odio eu enim. Pellentesque sed dui ut augue blandit sodales.</p>
+                    <p>Este é um texto de exemplo para os Termos de Serviço...</p>
+                    <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit...</p>
                     <h2 className="text-xl font-bold text-white mt-4">2. Contas de Usuário</h2>
-                    <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae; In ac dui quis mi consectetuer lacinia. Nam pretium turpis et arcu. Duis arcu tortor, suscipit eget, imperdiet nec, imperdiet iaculis, ipsum. Sed aliquam ultrices mauris. Integer ante arcu, accumsan a, consectetuer eget, posuere ut, mauris. Praesent adipiscing. Phasellus ullamcorper ipsum rutrum nunc. Nunc nonummy metus. Vestibulum volutpat pretium libero. Cras id dui. Aenean ut eros et nisl sagittis vestibulum.</p>
+                    <p>Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia Curae...</p>
                     <h2 className="text-xl font-bold text-white mt-4">3. Conteúdo e Propriedade Intelectual</h2>
-                    <p>Ao fazer upload de conteúdo (fotos, vídeos), você concede à GoFrame uma licença mundial, não exclusiva, isenta de royalties, para usar, reproduzir, distribuir e exibir esse conteúdo em conexão com os serviços da plataforma. Você retém todos os seus direitos de propriedade sobre seu conteúdo.</p>
-                    <p>Nullam dictum felis eu pede mollis pretium. Integer tincidunt. Cras dapibus. Vivamus elementum semper nisi. Aenean vulputate eleifend tellus. Aenean leo ligula, porttitor eu, consequat vitae, eleifend ac, enim. Aliquam lorem ante, dapibus in, viverra quis, feugiat a, tellus.</p>
+                    <p>Ao fazer upload de conteúdo (fotos, vídeos), você concede à GoFrame uma licença mundial...</p>
+                    <p>Nullam dictum felis eu pede mollis pretium...</p>
                 </div>
                 <div className="text-center mt-8">
                     <button onClick={navigateBack} className="p-4 w-full max-w-xs bg-[#FF4500] text-white rounded-md text-lg font-bold cursor-pointer transition-all hover:bg-[#e03e00]">Entendi, voltar</button>
@@ -252,29 +237,30 @@ const CreatorDashboard = ({ user }) => {
         const fetchCreatorData = async () => {
             const docRef = doc(db, "creators", user.uid);
             const docSnap = await getDoc(docRef);
-            if (docSnap.exists()) {
-                setCreatorData(docSnap.data());
-            } else {
-                console.log("No such document!");
-            }
+            if (docSnap.exists()) { setCreatorData(docSnap.data()); }
         };
         fetchCreatorData();
     }, [user]);
 
-    const handleSignOut = async () => {
-        await signOut(auth);
-    };
+    const handleSignOut = async () => { await signOut(auth); };
 
-    if (!creatorData) {
-        return <div className="bg-[#121212] text-white flex justify-center items-center min-h-screen">Carregando painel...</div>;
-    }
+    if (!creatorData) { return <div className="bg-[#121212] text-white flex justify-center items-center min-h-screen">Carregando painel...</div>; }
+
+    const renderPage = () => {
+        switch (activePage) {
+            case 'overview': return <DashboardOverview creatorData={creatorData} />;
+            case 'events': return <EventsPage />;
+            case 'upload': return <PlaceholderPage title="Upload de Mídia" />;
+            case 'finance': return <PlaceholderPage title="Financeiro" />;
+            case 'account': return <AccountPage creatorData={creatorData} />;
+            default: return <DashboardOverview creatorData={creatorData} />;
+        }
+    };
 
     return (
         <div className="flex bg-[#121212] text-white" style={{ fontFamily: "'Poppins', sans-serif" }}>
             <Sidebar activePage={activePage} setActivePage={setActivePage} handleSignOut={handleSignOut} />
-            <main className="flex-grow p-10 ml-[250px]">
-                {activePage === 'overview' && <DashboardOverview creatorData={creatorData} />}
-            </main>
+            <main className="flex-grow p-10 ml-[250px]">{renderPage()}</main>
         </div>
     );
 };
@@ -287,53 +273,59 @@ const Sidebar = ({ activePage, setActivePage, handleSignOut }) => {
         { id: 'finance', label: 'Financeiro', icon: <path d="M22,21H2V3H4V19H22V21M6,5H8V17H6V5M10,9H12V17H10V9M14,7H16V17H14V7M18,11H20V17H18V11Z"/> },
         { id: 'account', label: 'Minha Conta', icon: <path d="M12,4A4,4 0 0,1 16,8A4,4 0 0,1 12,12A4,4 0 0,1 8,8A4,4 0 0,1 12,4M12,14C16.42,14 20,15.79 20,18V20H4V18C4,15.79 7.58,14 12,14Z"/> },
     ];
-
     return (
         <aside className="w-[250px] bg-[#1e1e1e] h-screen p-5 box-border flex flex-col fixed">
             <div style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-4xl text-center mb-10">Go<span className="text-[#FF4500]">Frame</span></div>
             <nav className="flex-grow">
-                <ul>
-                    {navItems.map(item => (
-                        <li key={item.id}>
-                            <a href="#" onClick={(e) => {e.preventDefault(); setActivePage(item.id)}} className={`flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all ${activePage === item.id ? 'bg-[#FF4500] text-white' : 'hover:bg-[#FF4500] hover:text-white'}`}>
-                                <svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24">{item.icon}</svg>
-                                {item.label}
-                            </a>
-                        </li>
-                    ))}
-                </ul>
+                <ul>{navItems.map(item => (<li key={item.id}><a href="#" onClick={(e) => {e.preventDefault(); setActivePage(item.id)}} className={`flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all ${activePage === item.id ? 'bg-[#FF4500] text-white' : 'hover:bg-[#FF4500] hover:text-white'}`}><svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24">{item.icon}</svg>{item.label}</a></li>))}</ul>
             </nav>
-            <div>
-                 <a href="#" onClick={handleSignOut} className="flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all hover:bg-[#FF4500] hover:text-white">
-                    <svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24"><path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/></svg>
-                    Sair
-                </a>
-            </div>
+            <div><a href="#" onClick={handleSignOut} className="flex items-center p-3 text-[#B3B3B3] rounded-md mb-2 transition-all hover:bg-[#FF4500] hover:text-white"><svg className="w-6 h-6 mr-4 fill-current" viewBox="0 0 24 24"><path d="M16,17V14H9V10H16V7L21,12L16,17M14,2A2,2 0 0,1 16,4V6H14V4H5V20H14V18H16V20A2,2 0 0,1 14,22H5A2,2 0 0,1 3,20V4A2,2 0 0,1 5,2H14Z"/></svg>Sair</a></div>
         </aside>
     );
 };
 
 const DashboardOverview = ({ creatorData }) => {
+    const activityFeed = [
+        { icon: 'sale', text: "Venda realizada! (Foto IMG_7812.JPG)", time: "Hoje, 15:02" },
+        { icon: 'upload', text: "15 mídias enviadas para 'Trilha do Desafio'.", time: "Ontem, 11:34" },
+        { icon: 'sale', text: "Venda realizada! (Vídeo DJI_0025.MP4)", time: "Ontem, 09:12" },
+        { icon: 'event', text: "Evento 'Enduro das Cachoeiras' foi arquivado.", time: "2 dias atrás" },
+    ];
+    const icons = {
+        sale: <svg viewBox="0 0 24 24"><path d="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M11,16.5L6.5,12L7.91,10.59L11,13.67L16.09,8.59L17.5,10L11,16.5Z" /></svg>,
+        upload: <svg viewBox="0 0 24 24"><path d="M14,13V17H10V13H7L12,8L17,13H14M19.35,10.04C18.67,6.59 15.64,4 12,4C9.11,4 6.6,5.64 5.35,8.04C2.34,8.36 0,10.91 0,14A6,6 0 0,0 6,20H19A5,5 0 0,0 24,15C24,12.36 21.95,10.22 19.35,10.04Z" /></svg>,
+        event: <svg viewBox="0 0 24 24"><path d="M20.55,4.85L21.5,5.8L20.25,7.05L19.3,6.1M18.6,6.8L19.55,7.75L12.75,14.55L11.8,13.6M6,13.5L11.1,18.6C11.3,18.8 11.5,18.9 11.75,18.9H12V21H2V11H4.1C4.1,11.25 4.2,11.5 4.4,11.7L9.5,16.85L16.3,10L17.25,10.95L18.2,10M4,9V5A2,2 0 0,1 6,3H14A2,2 0 0,1 16,5V9H4Z" /></svg>,
+    };
+
     return (
-        <div>
-            <div className="mb-10">
-                <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider">Bem-vindo de volta,</h1>
-                <p className="text-2xl text-[#B3B3B3] mt-1">{creatorData.nickname}!</p>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
-                <div className="kpi-card"><div className="title">SALDO A RECEBER</div><div className="value positive">R$ 755,60</div></div>
-                <div className="kpi-card"><div className="title">VENDAS (7 DIAS)</div><div className="value">R$ 310,80</div></div>
-                <div className="kpi-card"><div className="title">EVENTOS ATIVOS</div><div className="value">3</div></div>
-                <div className="kpi-card"><div className="title">MÍDIAS ENVIADAS</div><div className="value">88</div></div>
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+            <div className="xl:col-span-2">
+                <div className="mb-10">
+                    <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider">Bem-vindo de volta,</h1>
+                    <p className="text-2xl text-[#B3B3B3] mt-1">{creatorData.nickname}!</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-5 mb-8">
+                    <div className="kpi-card"><div className="title">SALDO A RECEBER</div><div className="value positive">R$ 755,60</div></div>
+                    <div className="kpi-card"><div className="title">VENDAS (7 DIAS)</div><div className="value">R$ 310,80</div></div>
+                </div>
+                <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                    <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider mt-0 mb-5">Ações Rápidas</h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <a href="#" className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" /></svg> Fazer Novo Upload</a>
+                        <a href="#" className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M20.55,4.85L21.5,5.8L20.25,7.05L19.3,6.1M18.6,6.8L19.55,7.75L12.75,14.55L11.8,13.6M6,13.5L11.1,18.6C11.3,18.8 11.5,18.9 11.75,18.9H12V21H2V11H4.1C4.1,11.25 4.2,11.5 4.4,11.7L9.5,16.85L16.3,10L17.25,10.95L18.2,10M4,9V5A2,2 0 0,1 6,3H14A2,2 0 0,1 16,5V9H4Z" /></svg> Gerenciar Eventos</a>
+                    </div>
+                </div>
             </div>
             <div className="bg-[#1e1e1e] p-8 rounded-lg">
-                 <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider mt-0 mb-5">Ações Rápidas</h2>
-                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <a href="#" className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M9,16V10H5L12,3L19,10H15V16H9M5,20V18H19V20H5Z" /></svg> Fazer Novo Upload</a>
-                    <a href="#" className="quick-action-btn"><svg viewBox="0 0 24 24"><path d="M20.55,4.85L21.5,5.8L20.25,7.05L19.3,6.1M18.6,6.8L19.55,7.75L12.75,14.55L11.8,13.6M6,13.5L11.1,18.6C11.3,18.8 11.5,18.9 11.75,18.9H12V21H2V11H4.1C4.1,11.25 4.2,11.5 4.4,11.7L9.5,16.85L16.3,10L17.25,10.95L18.2,10M4,9V5A2,2 0 0,1 6,3H14A2,2 0 0,1 16,5V9H4Z" /></svg> Gerenciar Eventos</a>
-                 </div>
+                <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider mt-0 mb-5">Atividade Recente</h2>
+                <ul>{activityFeed.map((item, index) => (
+                    <li key={index} className="flex items-center gap-4 py-3 border-b border-[#333] last:border-b-0">
+                        <div className="bg-[#333] rounded-full w-10 h-10 flex items-center justify-center flex-shrink-0"><svg className="w-5 h-5 fill-current text-[#B3B3B3]" viewBox="0 0 24 24">{icons[item.icon]}</svg></div>
+                        <div><p className="m-0">{item.text}</p><p className="text-xs text-[#B3B3B3] m-0">{item.time}</p></div>
+                    </li>
+                ))}</ul>
             </div>
-             <style jsx>{`
+            <style jsx>{`
                 .kpi-card { background-color: #1e1e1e; padding: 20px; border-radius: 8px; text-align: center; }
                 .kpi-card .title { font-size: 1rem; color: #B3B3B3; margin-bottom: 10px; }
                 .kpi-card .value { font-size: 2.5rem; font-weight: 700; }
@@ -345,6 +337,89 @@ const DashboardOverview = ({ creatorData }) => {
         </div>
     );
 };
+
+const EventsPage = () => {
+    const events = [
+        { name: 'Trilha do Desafio - Serra Azul', date: '29/06/2025', media: '15 Vídeos, 33 Fotos', sales: 'R$ 1.250,00', status: 'Ativo' },
+        { name: 'Enduro das Cachoeiras', date: '15/06/2025', media: '8 Vídeos, 12 Fotos', sales: 'R$ 870,50', status: 'Ativo' },
+        { name: 'Trilha de Inverno', date: '12/05/2025', media: '22 Fotos', sales: 'R$ 450,00', status: 'Arquivado' },
+    ];
+    return (
+        <div>
+            <div className="flex justify-between items-center mb-8">
+                <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider">Meus Eventos</h1>
+                <button className="bg-[#FF4500] text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 hover:bg-[#e03e00] transition-colors"><svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19,13H13V19H11V13H5V11H11V5H13V11H19V13Z" /></svg>Criar Novo Evento</button>
+            </div>
+            <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                <table className="w-full text-left">
+                    <thead>
+                        <tr>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Nome do Evento</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Data</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Mídias</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Vendas</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Status</th>
+                            <th className="p-4 text-sm font-semibold text-[#B3B3B3] uppercase">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>{events.map((event, index) => (
+                        <tr key={index} className="border-t border-[#333] hover:bg-[#2a2a2a]">
+                            <td className="p-4">{event.name}</td>
+                            <td className="p-4">{event.date}</td>
+                            <td className="p-4">{event.media}</td>
+                            <td className="p-4">{event.sales}</td>
+                            <td className="p-4"><span className={`px-3 py-1 text-xs font-bold rounded-full ${event.status === 'Ativo' ? 'bg-green-500 text-white' : 'bg-gray-600 text-gray-200'}`}>{event.status}</span></td>
+                            <td className="p-4 flex gap-2">{/* Action buttons here */}</td>
+                        </tr>
+                    ))}</tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const AccountPage = ({ creatorData }) => {
+    return (
+        <div>
+            <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider mb-8">Minha Conta</h1>
+            <div className="max-w-4xl mx-auto space-y-8">
+                <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                    <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Informações Pessoais</h2>
+                    <form className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Nome Completo</label><input type="text" defaultValue={creatorData.fullname} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Apelido / Nome de Exibição</label><input type="text" defaultValue={creatorData.nickname} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">E-mail</label><input type="email" defaultValue={creatorData.email} readOnly className="w-full p-3 bg-[#2a2a2a] border border-[#333] rounded-md text-gray-400 cursor-not-allowed"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">WhatsApp</label><input type="tel" defaultValue={creatorData.whatsapp} className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                        </div>
+                        <div className="text-right pt-4"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Salvar</button></div>
+                    </form>
+                </div>
+                <div className="bg-[#1e1e1e] p-8 rounded-lg">
+                    <h2 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-3xl tracking-wider text-[#FF4500] mt-0 mb-6">Alterar Senha</h2>
+                    <form className="space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Senha Atual</label><input type="password" className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Nova Senha</label><input type="password" className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                            <div><label className="block text-sm text-[#B3B3B3] mb-2">Confirmar Nova Senha</label><input type="password" className="w-full p-3 bg-[#121212] border border-[#333] rounded-md"/></div>
+                        </div>
+                        <div className="text-right pt-4"><button type="submit" className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-6 rounded-lg">Alterar Senha</button></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const PlaceholderPage = ({ title }) => (
+    <div>
+        <h1 style={{ fontFamily: "'Bebas Neue', sans-serif" }} className="text-6xl m-0 tracking-wider mb-4">{title}</h1>
+        <div className="bg-[#1e1e1e] p-8 rounded-lg text-center">
+            <p className="text-xl text-[#B3B3B3]">Esta página está em construção.</p>
+            <p>Volte em breve para ver as novidades!</p>
+        </div>
+    </div>
+);
 
 // ==================================================================================
 // COMPONENTE PRINCIPAL DA APLICAÇÃO (App.js)

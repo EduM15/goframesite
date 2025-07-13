@@ -1,22 +1,16 @@
 // src/pages/CreatorDashboard.js
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
-// A importação abaixo foi corrigida, removendo 'Settings'
 import { LogOut, LayoutDashboard, Calendar, Upload, DollarSign, User } from 'lucide-react';
 import { auth } from '../config/firebase';
 
+// O componente Sidebar não precisa de alterações visuais drásticas,
+// mas o layout principal sim.
 const Sidebar = () => {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    try {
-      await auth.signOut();
-      // O redirecionamento agora é tratado pelo ProtectedRoute e pela estrutura do App.js,
-      // mas podemos forçar uma navegação para garantir.
-      navigate('/auth');
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-    }
+    await auth.signOut();
   };
 
   const navItems = [
@@ -28,14 +22,14 @@ const Sidebar = () => {
   ];
 
   return (
-    <div className="w-64 bg-[#121212] text-white flex flex-col p-4 border-r border-gray-800 h-full">
-      <div className="font-bebas-neue text-3xl text-brand-orange mb-10 pl-2">GoFrame</div>
+    <div className="w-64 bg-background text-text-main flex flex-col p-4 border-r border-surface">
+      <div className="font-bebas-neue text-3xl text-primary mb-10 pl-2">GoFrame</div>
       <nav className="flex-grow">
         {navItems.map(item => (
           <button 
             key={item.label} 
             onClick={() => navigate(item.path)} 
-            className="w-full flex items-center p-3 rounded-lg hover:bg-[#1e1e1e] transition-colors duration-200 mb-2 text-left"
+            className="w-full flex items-center p-3 rounded-lg hover:bg-surface transition-colors duration-200 mb-2 text-left"
           >
             <item.icon className="w-5 h-5 mr-4 flex-shrink-0" />
             <span className="font-poppins">{item.label}</span>
@@ -43,10 +37,7 @@ const Sidebar = () => {
         ))}
       </nav>
       <div className="mt-auto">
-        <button 
-          onClick={handleLogout} 
-          className="w-full flex items-center p-3 rounded-lg hover:bg-[#1e1e1e] transition-colors duration-200 text-left"
-        >
+        <button onClick={handleLogout} className="w-full flex items-center p-3 rounded-lg hover:bg-surface transition-colors duration-200 text-left">
           <LogOut className="w-5 h-5 mr-4 flex-shrink-0" />
           <span className="font-poppins">Sair</span>
         </button>
@@ -55,12 +46,14 @@ const Sidebar = () => {
   );
 };
 
+
 const CreatorDashboard = () => {
   return (
-    <div className="flex h-screen bg-[#1e1e1e] font-poppins text-white">
+    // Corrigido: Fundo principal é 'background', conteúdo da página é 'background'
+    <div className="flex h-screen bg-background font-poppins text-text-main">
       <Sidebar />
       <main className="flex-1 p-8 overflow-y-auto">
-        <Outlet /> {/* O conteúdo da página atual (Visão Geral, etc.) será renderizado aqui pelo roteador */}
+        <Outlet />
       </main>
     </div>
   );

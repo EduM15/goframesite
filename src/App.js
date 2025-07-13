@@ -8,11 +8,9 @@ import CreatorDashboard from './pages/CreatorDashboard';
 import AuthPage from './pages/AuthPage';
 import Overview from './pages/Overview';
 import MyEvents from './pages/MyEvents';
-
-// Crie arquivos placeholder para estas páginas se desejar
-// import Upload from './pages/Upload';
-// import Financial from './pages/Financial';
-// import Account from './pages/Account';
+import Upload from './pages/Upload';
+import Financial from './pages/Financial';
+import Account from './pages/Account';
 
 function App() {
   const { user, loading } = useAuth();
@@ -36,10 +34,11 @@ function App() {
           {/* Rotas aninhadas dentro do CreatorDashboard */}
           <Route index element={<Overview />} />
           <Route path="events" element={<MyEvents />} />
-          {/* <Route path="upload" element={<Upload />} />
+          <Route path="upload" element={<Upload />} />
           <Route path="financial" element={<Financial />} />
-          <Route path="account" element={<Account />} /> 
-          */}
+          <Route path="account" element={<Account />} />
+          {/* Adicionar uma rota curinga para redirecionar caminhos não encontrados */}
+          <Route path="*" element={<Navigate to="/" />} />
       </Route>
     </Routes>
   );

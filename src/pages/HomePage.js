@@ -2,7 +2,8 @@ import React from 'react';
 import EventCard from '../components/EventCard';
 import Input from '../components/ui/Input';
 import Button from '../components/ui/Button';
-import { Search } from 'lucide-react';
+import Icon from '@mdi/react'; // Importação da nova biblioteca de ícones
+import { mdiMagnify } from '@mdi/js'; // Importação do ícone de busca
 
 // NOTA: Estes dados são estáticos (mock). Em uma fase futura, eles serão carregados do Firestore.
 const recentEvents = [
@@ -37,7 +38,7 @@ const HomePage = () => {
               className="rounded-r-none border-r-0"
             />
             <Button type="submit" variant="primary" className="rounded-l-none">
-              <Search size={20} />
+              <Icon path={mdiMagnify} size={1} />
               <span className="hidden md:inline ml-2">BUSCAR</span>
             </Button>
           </form>

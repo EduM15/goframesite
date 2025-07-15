@@ -1,25 +1,17 @@
-// src/pages/MyEvents.js
 import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
-import { db, auth } from '../config/firebase';
+import { db } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
 import Modal from '../components/Modal';
-import { Plus, Trash2 } from 'lucide-react';
+import Button from '../components/ui/Button';
+import Input from '../components/ui/Input';
+import Card from '../components/ui/Card';
+import Icon from '@mdi/react';
+import { mdiPlus, mdiTrashCanOutline } from '@mdi/js';
 
-// O EventForm foi movido para dentro de MyEvents.js por simplicidade,
-// mas poderia ser um componente separado.
-const EventForm = ({ onSave, onCancel, initialData = {} }) => {
-    const [formData, setFormData] = useState({
-        name: initialData.name || '',
-        date: initialData.date || '',
-        description: initialData.description || '',
-        thumbnailUrl: initialData.thumbnailUrl || ''
-    });
-
-    const handleChange = (e) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
+const EventForm = ({ onSave, onCancel }) => {
+    const [formData, setFormData] = useState({ name: '', date: '', description: '', thumbnailUrl: '' });
+    const handleChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSubmit = (e) => {
         e.preventDefault();
@@ -28,13 +20,13 @@ const EventForm = ({ onSave, onCancel, initialData = {} }) => {
 
     return (
         <form onSubmit={handleSubmit} className="space-y-4">
-            <input type="text" name="name" placeholder="Nome do Evento" value={formData.name} onChange={handleChange} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 text-text-main focus:ring-primary focus:border-primary" required />
-            <input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 text-text-main focus:ring-primary focus:border-primary" required />
+            <Input type="text" name="name" placeholder="Nome do Evento" value={formData.name} onChange={handleChange} required />
+            <Input type="date" name="date" value={formData.date} onChange={handleChange} className="w-full" required />
             <textarea name="description" placeholder="Descrição (opcional)" value={formData.description} onChange={handleChange} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 h-24 text-text-main focus:ring-primary focus:border-primary"></textarea>
-            <input type="url" name="thumbnailUrl" placeholder="URL da Miniatura (opcional)" value={formData.thumbnailUrl} onChange={handleChange} className="w-full bg-[#2a2a2a] border border-gray-700 rounded-lg p-3 text-text-main focus:ring-primary focus:border-primary" />
+            <Input type="url" name="thumbnailUrl" placeholder="URL da Miniatura (opcional)" value={formData.thumbnailUrl} onChange={handleChange} />
             <div className="flex justify-end space-x-3 pt-4">
-                <button type="button" onClick={onCancel} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors">Cancelar</button>
-                <button type="submit" className="px-4 py-2 rounded-lg bg-primary hover:opacity-90 transition-opacity font-bold">Salvar Evento</button>
+                <Button type="button" variant="secondary" onClick={onCancel}>Cancelar</Button>
+                <Button type="submit">Salvar Evento</Button>
             </div>
         </form>
     );
@@ -45,7 +37,7 @@ const MyEvents = () => {
     const { user } = useAuth();
     const [events, setEvents] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [eventToDelete, setEventToDelete] = useState(null);
 
     useEffect(() => {
@@ -62,7 +54,7 @@ const MyEvents = () => {
     const handleCreateEvent = async (formData) => {
         if (!user) return;
         await addDoc(collection(db, "events"), { ...formData, creatorId: user.uid, createdAt: serverTimestamp() });
-        setIsModalOpen(false);
+        setIsCreateModalOpen(false);
     };
     
     const handleDeleteEvent = async () => {
@@ -74,18 +66,18 @@ const MyEvents = () => {
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-3xl font-bold font-bebas-neue">Meus Eventos</h1>
-                <button onClick={() => setIsModalOpen(true)} className="flex items-center bg-primary text-white font-bold py-2 px-4 rounded-lg hover:opacity-90 transition-opacity">
-                    <Plus size={20} className="mr-2" />
+                <h1 className="text-4xl font-bold font-bebas-neue text-primary">Meus Eventos</h1>
+                <Button onClick={() => setIsCreateModalOpen(true)}>
+                    <Icon path={mdiPlus} size={0.8} />
                     Criar Novo Evento
-                </button>
+                </Button>
             </div>
 
-            <div className="bg-surface rounded-lg overflow-hidden">
+            <Card>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-opacity-20 bg-white">
-                            <tr>
+                        <thead>
+                            <tr className="border-b border-gray-700">
                                 <th className="p-4 font-semibold text-text-secondary">Nome do Evento</th>
                                 <th className="p-4 font-semibold text-text-secondary">Data</th>
                                 <th className="p-4 font-semibold text-text-secondary">Mídias</th>
@@ -96,13 +88,13 @@ const MyEvents = () => {
                             {isLoading && (<tr><td colSpan="4" className="text-center p-8 text-text-secondary">Carregando eventos...</td></tr>)}
                             {!isLoading && events.length === 0 && (<tr><td colSpan="4" className="text-center p-8 text-text-secondary">Nenhum evento encontrado.</td></tr>)}
                             {events.map(event => (
-                                <tr key={event.id} className="border-b border-background hover:bg-opacity-10 hover:bg-white">
+                                <tr key={event.id} className="border-b border-gray-800 hover:bg-background">
                                     <td className="p-4 text-text-main">{event.name}</td>
                                     <td className="p-4 text-text-main">{new Date(event.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</td>
                                     <td className="p-4 text-text-main">0</td>
                                     <td className="p-4">
                                         <button onClick={() => setEventToDelete(event)} className="text-danger hover:opacity-80 transition-opacity">
-                                            <Trash2 size={20} />
+                                            <Icon path={mdiTrashCanOutline} size={1} />
                                         </button>
                                     </td>
                                 </tr>
@@ -110,18 +102,18 @@ const MyEvents = () => {
                         </tbody>
                     </table>
                 </div>
-            </div>
+            </Card>
 
-            <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} title="Criar Novo Evento">
-                <EventForm onSave={handleCreateEvent} onCancel={() => setIsModalOpen(false)} />
+            <Modal isOpen={isCreateModalOpen} onClose={() => setIsCreateModalOpen(false)} title="Criar Novo Evento">
+                <EventForm onSave={handleCreateEvent} onCancel={() => setIsCreateModalOpen(false)} />
             </Modal>
 
             <Modal isOpen={!!eventToDelete} onClose={() => setEventToDelete(null)} title="Confirmar Exclusão">
                 <p>Você tem certeza que deseja excluir o evento "<strong>{eventToDelete?.name}</strong>"?</p>
                 <p className="text-sm text-danger mt-2">Esta ação não pode ser desfeita.</p>
                 <div className="flex justify-end space-x-3 pt-6">
-                    <button onClick={() => setEventToDelete(null)} className="px-4 py-2 rounded-lg bg-gray-600 hover:bg-gray-700 transition-colors">Cancelar</button>
-                    <button onClick={handleDeleteEvent} className="px-4 py-2 rounded-lg bg-danger hover:opacity-90 transition-opacity font-bold">Excluir</button>
+                    <Button variant="secondary" onClick={() => setEventToDelete(null)}>Cancelar</Button>
+                    <Button variant="danger" onClick={handleDeleteEvent}>Excluir</Button>
                 </div>
             </Modal>
         </div>

@@ -1,45 +1,68 @@
-// src/App.js
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 
+// Layouts
+import PublicLayout from './components/layouts/PublicLayout';
+import CreatorLayout from './components/layouts/CreatorLayout';
+
+// Componentes
 import ProtectedRoute from './components/ProtectedRoute';
-import CreatorDashboard from './pages/CreatorDashboard';
+
+// Páginas
 import AuthPage from './pages/AuthPage';
+import HomePage from './pages/HomePage'; // Importação da página real
+
+// Páginas do Criador
 import Overview from './pages/Overview';
 import MyEvents from './pages/MyEvents';
 import Upload from './pages/Upload';
 import Financial from './pages/Financial';
 import Account from './pages/Account';
 
+// Placeholders para páginas futuras
+const EventPage = () => <div className="p-8 text-center"><h1>Página do Evento</h1><p>Baseada em pagina-evento.html</p></div>;
+const CartPage = () => <div className="p-8 text-center"><h1>Carrinho</h1><p>Baseado em carrinho.html</p></div>;
+
+
 function App() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="bg-[#121212] h-screen flex items-center justify-center text-white">Inicializando...</div>;
+    return <div className="bg-background h-screen flex items-center justify-center text-text-main">Inicializando...</div>;
   }
 
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to="/" /> : <AuthPage />} />
-      
+      {/* Rotas Públicas */}
+      <Route element={<PublicLayout />}>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/event/:eventId" element={<EventPage />} />
+        <Route path="/cart" element={<CartPage />} />
+      </Route>
+
+      {/* Rota de Autenticação (sem layout principal) */}
+      <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
+
+      {/* Rotas Protegidas do Criador */}
       <Route 
-        path="/*"
+        path="/creator" 
         element={
           <ProtectedRoute>
-            <CreatorDashboard />
+            <CreatorLayout />
           </ProtectedRoute>
         }
       >
-          {/* Rotas aninhadas dentro do CreatorDashboard */}
-          <Route index element={<Overview />} />
-          <Route path="events" element={<MyEvents />} />
-          <Route path="upload" element={<Upload />} />
-          <Route path="financial" element={<Financial />} />
-          <Route path="account" element={<Account />} />
-          {/* Adicionar uma rota curinga para redirecionar caminhos não encontrados */}
-          <Route path="*" element={<Navigate to="/" />} />
+        <Route index element={<Overview />} />
+        <Route path="events" element={<MyEvents />} />
+        <Route path="upload" element={<Upload />} />
+        <Route path="financial" element={<Financial />} />
+        <Route path="account" element={<Account />} />
+        <Route path="*" element={<Navigate to="/creator" />} />
       </Route>
+      
+      {/* Fallback para qualquer outra rota não encontrada */}
+      <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );
 }

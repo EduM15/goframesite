@@ -2,7 +2,7 @@
 import React from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { LogOut, LayoutDashboard, Calendar, Upload, DollarSign, User } from 'lucide-react';
-import { auth } from '../config/firebase';
+import { auth } from '../../config/firebase';
 
 // O componente Sidebar não precisa de alterações visuais drásticas,
 // mas o layout principal sim.

@@ -1,12 +1,13 @@
 import React from 'react';
+import Card from '../components/ui/Card';
 
 const Financial = () => {
   return (
     <div>
-      <h1 className="text-3xl font-bold mb-6 font-bebas-neue">Financeiro</h1>
-      <div className="bg-[#121212] p-6 rounded-lg">
-        <p className="text-gray-300">Relatórios de vendas, saldo e histórico de saques a serem implementados aqui.</p>
-      </div>
+      <h1 className="text-4xl font-bold mb-6 font-bebas-neue text-primary">Financeiro</h1>
+      <Card>
+        <p className="text-text-secondary">Relatórios de vendas, saldo e histórico de saques a serem implementados aqui.</p>
+      </Card>
     </div>
   );
 };

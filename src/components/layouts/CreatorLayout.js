@@ -24,7 +24,10 @@ const Sidebar = () => {
 
   return (
     <div className="w-64 bg-background text-text-main flex flex-col p-4 border-r border-surface h-full">
-      <div className="font-bebas-neue text-3xl text-primary mb-10 pl-2">GoFrame</div>
+      <div className="font-bebas-neue text-3xl mb-10 pl-2">
+  <span className="text-primary">Go</span>
+  <span className="text-text-main">Frame</span>
+</div>
       <nav className="flex-grow">
         {navItems.map(item => (
           <NavLink 

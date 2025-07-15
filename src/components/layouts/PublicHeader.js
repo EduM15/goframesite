@@ -1,18 +1,19 @@
 import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import Button from '../ui/Button';
-import { useAuth } from '../../hooks/useAuth'; // Importar o hook
+import { useAuth } from '../../hooks/useAuth';
 import Icon from '@mdi/react';
 import { mdiCartOutline } from '@mdi/js';
 
 const PublicHeader = () => {
-  const { user } = useAuth(); // Usar o hook para verificar o status do login
+  const { user } = useAuth();
 
   return (
     <header className="bg-surface text-text-main p-5 shadow-lg">
       <div className="container mx-auto flex justify-between items-center">
-        <Link to="/" className="font-bebas-neue text-4xl text-text-main">
-          Go<span className="text-primary">Frame</span>
+        <Link to="/" className="font-bebas-neue text-4xl">
+          <span className="text-primary">Go</span>
+          <span className="text-text-main">Frame</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-8">

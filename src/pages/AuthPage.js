@@ -22,7 +22,10 @@ const AuthPage = () => {
         type={notification.type} 
         onClose={closeNotification} 
       />
-      <h1 className="text-5xl font-bold font-bebas-neue text-brand-orange mb-8">GoFrame.art.br</h1>
+      <h1 className="text-5xl font-bold font-bebas-neue mb-8">
+  <span className="text-primary">Go</span>
+  <span className="text-text-main">Frame</span>
+</h1>
       <div className="w-full max-w-md bg-[#1e1e1e] p-8 rounded-lg shadow-lg">
         <h2 className="text-3xl font-bold mb-6 text-center font-bebas-neue">
           {isLoginView ? 'Acesso do Criador' : 'Cadastro de Criador'}

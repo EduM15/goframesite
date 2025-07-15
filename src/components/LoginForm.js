@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import Button from './ui/Button'; // Caminho corrigido para o componente Button
+import Input from './ui/Input';   // Usando também o componente Input
 
 const LoginForm = ({ onNotification }) => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -20,30 +22,32 @@ const LoginForm = ({ onNotification }) => {
     setIsLoading(true);
     try {
       await signInWithEmailAndPassword(auth, formData.email, formData.password);
-      // O redirecionamento será tratado automaticamente pelo ProtectedRoute/App.js
     } catch (error) {
       let errorMessage = 'Ocorreu um erro ao fazer login.';
       if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
         errorMessage = 'E-mail ou senha inválidos.';
       }
       onNotification(errorMessage, 'error');
-      setIsLoading(false);
+    } finally {
+        setIsLoading(false);
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <div className="mb-4">
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">E-mail</label>
-        <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} className="w-full bg-[#2a2a2a] border border-gray-600 rounded-lg p-3 focus:ring-orange-500 focus:border-orange-500" required />
+    <form onSubmit={handleSubmit} className="space-y-4">
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-text-secondary mb-1">E-mail</label>
+        <Input type="email" id="email" name="email" value={formData.email} onChange={handleChange} required />
       </div>
-      <div className="mb-6">
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">Senha</label>
-        <input type="password" id="password" name="password" value={formData.password} onChange={handleChange} className="w-full bg-[#2a2a2a] border border-gray-600 rounded-lg p-3 focus:ring-orange-500 focus:border-orange-500" required />
+      <div>
+        <label htmlFor="password" className="block text-sm font-medium text-text-secondary mb-1">Senha</label>
+        <Input type="password" id="password" name="password" value={formData.password} onChange={handleChange} required />
       </div>
-      <button type="submit" disabled={isLoading} className="w-full bg-brand-orange text-white font-bold py-3 rounded-lg hover:bg-orange-600 transition-colors duration-300 disabled:bg-orange-800">
-        {isLoading ? 'Entrando...' : 'Entrar no Portal'}
-      </button>
+      <div className="pt-2">
+        <Button type="submit" disabled={isLoading} className="w-full">
+          {isLoading ? 'Entrando...' : 'Entrar no Portal'}
+        </Button>
+      </div>
     </form>
   );
 };

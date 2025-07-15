@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { createUserWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { setDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from '../config/firebase';
-import Button from '../ui/Button';
-import Input from '../ui/Input';
+import Button from './ui/Button'; // Caminho correto: ./ui/Button
+import Input from './ui/Input';   // Caminho correto: ./ui/Input
 
 const SignUpForm = ({ onNotification, onSwitchToLogin }) => {
   const [formData, setFormData] = useState({
@@ -12,9 +12,9 @@ const SignUpForm = ({ onNotification, onSwitchToLogin }) => {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleWhatsappChange = (e) => {
-    let value = e.target.value.replace(/\D/g, ''); // Remove tudo que não é dígito
-    value = value.replace(/^(\d{2})(\d)/g, '($1) $2'); // Coloca parênteses em volta dos dois primeiros dígitos
-    value = value.replace(/(\d{5})(\d)/, '$1-$2'); // Coloca hífen depois do quinto dígito
+    let value = e.target.value.replace(/\D/g, '');
+    value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+    value = value.replace(/(\d{5})(\d)/, '$1-$2');
     setFormData(prevState => ({ ...prevState, whatsapp: value.slice(0, 15) }));
   };
   
@@ -29,31 +29,20 @@ const SignUpForm = ({ onNotification, onSwitchToLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // ... (lógica de submit existente)
-    // A validação de e-mail é feita pelo "type='email'" no componente Input.
-    // O navegador não permitirá o envio do formulário com um e-mail inválido.
     setIsLoading(true);
     try {
       const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
       const user = userCredential.user;
-      
       await sendEmailVerification(user);
-
       await setDoc(doc(db, "creators", user.uid), {
         uid: user.uid, fullname: formData.fullname, nickname: formData.nickname,
         whatsapp: formData.whatsapp, email: formData.email, role: 'creator',
         defaultPhotoPrice: 10.00, defaultVideoPrice: 15.00, createdAt: serverTimestamp()
       });
-
       onNotification('Cadastro realizado! Um e-mail de verificação foi enviado.', 'success');
       setTimeout(() => onSwitchToLogin(), 3000);
-
     } catch (error) {
-      if (error.code === 'auth/email-already-in-use') {
-        onNotification('Este e-mail já está em uso.', 'error');
-      } else {
-        onNotification('Ocorreu um erro no cadastro.', 'error');
-      }
+      onNotification(error.code === 'auth/email-already-in-use' ? 'Este e-mail já está em uso.' : 'Ocorreu um erro no cadastro.', 'error');
     } finally {
         setIsLoading(false);
     }
@@ -61,7 +50,6 @@ const SignUpForm = ({ onNotification, onSwitchToLogin }) => {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      {/* Usando o componente Input padronizado */}
       <Input type="text" name="fullname" placeholder="Nome Completo" value={formData.fullname} onChange={handleChange} required />
       <Input type="text" name="nickname" placeholder="Apelido / Nome de Fotógrafo(a)" value={formData.nickname} onChange={handleChange} required />
       <Input type="tel" name="whatsapp" placeholder="WhatsApp (com DDD)" value={formData.whatsapp} onChange={handleChange} required />

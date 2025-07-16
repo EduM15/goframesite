@@ -1,13 +1,14 @@
 import React from 'react';
-import { useCart } from '../contexts/CartContext'; // Importar o hook do carrinho
+import { useCart } from '../contexts/CartContext';
 import Icon from '@mdi/react';
 import { mdiPlayCircle, mdiCheck } from '@mdi/js';
 
-const MediaCard = ({ media }) => {
+const MediaCard = ({ media, onImageClick }) => { // Recebe onImageClick como prop
   const { addToCart, removeFromCart, isItemInCart } = useCart();
   const isInCart = isItemInCart(media.id);
 
-  const handleToggleCart = () => {
+  const handleToggleCart = (e) => {
+    e.stopPropagation(); // Impede que o clique no checkbox abra o modal
     if (isInCart) {
       removeFromCart(media.id);
     } else {
@@ -16,7 +17,8 @@ const MediaCard = ({ media }) => {
   };
 
   return (
-    <div className="group bg-surface rounded-lg overflow-hidden relative cursor-pointer" onClick={handleToggleCart}>
+    // O clique no card principal agora abre o modal, via prop
+    <div className="group bg-surface rounded-lg overflow-hidden relative cursor-pointer" onClick={() => onImageClick(media)}>
       <img
         src={media.imageUrl}
         alt={`Mídia do evento ${media.id}`}
@@ -34,7 +36,12 @@ const MediaCard = ({ media }) => {
         </div>
       )}
 
-      <div className={`absolute top-3 right-3 w-7 h-7 rounded-md border-2 border-white flex items-center justify-center transition-all duration-200 ${isInCart ? 'bg-primary border-primary' : 'bg-black/50'}`}>
+      {/* Checkbox de Seleção que agora adiciona ao carrinho */}
+      <div 
+        onClick={handleToggleCart} 
+        className={`absolute top-3 right-3 w-7 h-7 rounded-md border-2 border-white flex items-center justify-center transition-all duration-200 z-10 ${isInCart ? 'bg-primary border-primary' : 'bg-black/50 hover:border-primary'}`}
+        title={isInCart ? "Remover do Carrinho" : "Adicionar ao Carrinho"}
+      >
         {isInCart && <Icon path={mdiCheck} size={1} className="text-white" />}
       </div>
     </div>

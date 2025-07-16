@@ -2,14 +2,16 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
+import { useCart } from '../../contexts/CartContext'; // <<< ESTA É A LINHA QUE FALTAVA
 import Icon from '@mdi/react';
 import { mdiCartOutline } from '@mdi/js';
 
 const PublicHeader = () => {
   const { user } = useAuth();
+  const { cartItemCount } = useCart();
 
   return (
-    <header className="bg-surface text-text-main p-5 shadow-lg">
+    <header className="bg-surface text-text-main p-5 shadow-lg sticky top-0 z-20">
       <div className="container mx-auto flex justify-between items-center">
         <Link to="/" className="font-bebas-neue text-4xl">
           <span className="text-primary">Go</span>
@@ -31,7 +33,11 @@ const PublicHeader = () => {
         <div className="flex items-center gap-6">
           <Link to="/cart" className="relative text-text-secondary hover:text-primary">
              <Icon path={mdiCartOutline} size={1.2} />
-             <span className="absolute -top-2 -right-2 bg-danger text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+             {cartItemCount > 0 && (
+               <span className="absolute -top-2 -right-2 bg-danger text-white text-xs rounded-full h-5 w-5 flex items-center justify-center font-bold">
+                 {cartItemCount}
+               </span>
+             )}
           </Link>
           {user ? (
             <div className="flex items-center gap-4">

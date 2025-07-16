@@ -12,7 +12,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 // Páginas
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
-import EventPage from './pages/EventPage'; // Importação da página real
+import EventPage from './pages/EventPage';
+import CartPage from './pages/CartPage'; // Importação da página real do carrinho
 
 // Páginas do Criador
 import Overview from './pages/Overview';
@@ -20,9 +21,6 @@ import MyEvents from './pages/MyEvents';
 import Upload from './pages/Upload';
 import Financial from './pages/Financial';
 import Account from './pages/Account';
-
-// Placeholders para páginas futuras
-const CartPage = () => <div className="p-8 text-center"><h1>Carrinho</h1><p>Baseado em carrinho.html</p></div>;
 
 
 function App() {

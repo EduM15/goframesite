@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import LoginForm from '../components/LoginForm';
 import SignUpForm from '../components/SignUpForm';
 import Notification from '../components/Notification';
@@ -16,17 +17,18 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="bg-[#121212] min-h-screen flex flex-col items-center justify-center text-white p-4 font-poppins">
+    <div className="bg-background min-h-screen flex flex-col items-center justify-center text-white p-4 font-poppins">
       <Notification 
         message={notification.message} 
         type={notification.type} 
         onClose={closeNotification} 
       />
-      <h1 className="text-5xl font-bold font-bebas-neue mb-8">
-  <span className="text-primary">Go</span>
-  <span className="text-text-main">Frame</span>
-</h1>
-      <div className="w-full max-w-md bg-[#1e1e1e] p-8 rounded-lg shadow-lg">
+      <Link to="/" className="text-5xl font-bold font-bebas-neue mb-2">
+        <span className="text-primary">Go</span>
+        <span className="text-text-main">Frame</span>
+      </Link>
+      
+      <div className="w-full max-w-md bg-surface p-8 rounded-lg shadow-lg mt-6">
         <h2 className="text-3xl font-bold mb-6 text-center font-bebas-neue">
           {isLoginView ? 'Acesso do Criador' : 'Cadastro de Criador'}
         </h2>
@@ -40,7 +42,7 @@ const AuthPage = () => {
         <div className="mt-6 text-center">
           <button 
             onClick={() => setIsLoginView(!isLoginView)} 
-            className="text-sm text-brand-orange hover:underline"
+            className="text-sm text-primary hover:underline"
           >
             {isLoginView ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça o login'}
           </button>

@@ -11,7 +11,8 @@ import ProtectedRoute from './components/ProtectedRoute';
 
 // Páginas
 import AuthPage from './pages/AuthPage';
-import HomePage from './pages/HomePage'; // Importação da página real
+import HomePage from './pages/HomePage';
+import EventPage from './pages/EventPage'; // Importação da página real
 
 // Páginas do Criador
 import Overview from './pages/Overview';
@@ -21,7 +22,6 @@ import Financial from './pages/Financial';
 import Account from './pages/Account';
 
 // Placeholders para páginas futuras
-const EventPage = () => <div className="p-8 text-center"><h1>Página do Evento</h1><p>Baseada em pagina-evento.html</p></div>;
 const CartPage = () => <div className="p-8 text-center"><h1>Carrinho</h1><p>Baseado em carrinho.html</p></div>;
 
 

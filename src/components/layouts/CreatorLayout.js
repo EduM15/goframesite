@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet, NavLink, Link } from 'react-router-dom';
 import { auth } from '../../config/firebase';
 import Icon from '@mdi/react';
 import { mdiViewDashboard, mdiCalendar, mdiUpload, mdiChartBar, mdiAccountCog, mdiLogout } from '@mdi/js';
@@ -24,16 +24,16 @@ const Sidebar = () => {
 
   return (
     <div className="w-64 bg-background text-text-main flex flex-col p-4 border-r border-surface h-full">
-      <div className="font-bebas-neue text-3xl mb-10 pl-2">
-  <span className="text-primary">Go</span>
-  <span className="text-text-main">Frame</span>
-</div>
+      <Link to="/" className="font-bebas-neue text-3xl mb-10 pl-2 text-center">
+        <span className="text-primary">Go</span>
+        <span className="text-text-main">Frame</span>
+      </Link>
       <nav className="flex-grow">
         {navItems.map(item => (
           <NavLink 
             key={item.label} 
             to={item.path}
-            end={item.path === '/creator'} // Garante que só a "Visão Geral" fica ativa na raiz do painel
+            end={item.path === '/creator'}
             className={({ isActive }) => `${baseLinkClasses} ${isActive ? activeLinkClasses : inactiveLinkClasses}`}
           >
             <Icon path={item.icon} size={1} className="mr-4" />

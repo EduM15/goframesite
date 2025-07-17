@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useAuth } from '../hooks/useAuth';
+
 import Modal from '../components/Modal';
 import Button from '../components/ui/Button';
 import Input from '../components/ui/Input';
 import Card from '../components/ui/Card';
+import Notification from '../components/Notification'; // Importar o componente de notificação
 import Icon from '@mdi/react';
 import { mdiPlus, mdiTrashCanOutline } from '@mdi/js';
 
@@ -39,6 +41,12 @@ const MyEvents = () => {
     const [isLoading, setIsLoading] = useState(true);
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [eventToDelete, setEventToDelete] = useState(null);
+    const [notification, setNotification] = useState({ message: '', type: '' });
+
+    const showNotification = (message, type) => {
+        setNotification({ message, type });
+        setTimeout(() => setNotification({ message: '', type: '' }), 4000);
+    };
 
     useEffect(() => {
         if (!user) return;
@@ -47,24 +55,38 @@ const MyEvents = () => {
         const unsubscribe = onSnapshot(q, (snapshot) => {
             setEvents(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             setIsLoading(false);
-        }, () => setIsLoading(false));
+        }, () => {
+            setIsLoading(false);
+            showNotification('Erro ao buscar eventos.', 'danger');
+        });
         return () => unsubscribe();
     }, [user]);
 
     const handleCreateEvent = async (formData) => {
         if (!user) return;
-        await addDoc(collection(db, "events"), { ...formData, creatorId: user.uid, createdAt: serverTimestamp() });
-        setIsCreateModalOpen(false);
+        try {
+            await addDoc(collection(db, "events"), { ...formData, creatorId: user.uid, createdAt: serverTimestamp() });
+            showNotification('Evento criado com sucesso!', 'success');
+            setIsCreateModalOpen(false);
+        } catch (error) {
+            showNotification('Falha ao criar evento. Verifique as permissões.', 'danger');
+        }
     };
     
     const handleDeleteEvent = async () => {
         if (!eventToDelete) return;
-        await deleteDoc(doc(db, "events", eventToDelete.id));
-        setEventToDelete(null);
+        try {
+            await deleteDoc(doc(db, "events", eventToDelete.id));
+            showNotification('Evento excluído com sucesso.', 'success');
+            setEventToDelete(null);
+        } catch (error) {
+            showNotification('Falha ao excluir evento.', 'danger');
+        }
     };
 
     return (
         <div>
+            <Notification message={notification.message} type={notification.type} onClose={() => setNotification({ message: '', type: '' })} />
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-4xl font-bold font-bebas-neue text-primary">Meus Eventos</h1>
                 <Button onClick={() => setIsCreateModalOpen(true)}>

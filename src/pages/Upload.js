@@ -10,6 +10,7 @@ import Button from '../components/ui/Button';
 import Icon from '@mdi/react';
 import { mdiUpload, mdiFileCheck, mdiAlertCircle, mdiFileImageOutline, mdiVideoOutline, mdiCloseCircle } from '@mdi/js';
 
+// Componente FileQueueItem (sem alterações)
 const FileQueueItem = ({ file, onRemove }) => {
     const { status, error, progress } = file;
     const isError = status === 'error';
@@ -57,15 +58,11 @@ const Upload = () => {
         return unsub;
     }, [user, selectedEvent]);
 
-    const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
+    const onDrop = useCallback((accepted, rejected) => {
         const uniqueId = () => `file_${Date.now()}_${Math.random()}`;
-        
-        const prepared = acceptedFiles.map(f => ({ file: f, id: uniqueId(), progress: 0, status: 'pending' }));
-        
-        // CORREÇÃO: Renomeada a variável para evitar conflito com o parâmetro 'rejectedFiles'
-        const preparedRejected = rejectedFiles.map(r => ({ file: r.file, id: uniqueId(), progress: 0, status: 'error', error: 'Tipo de arquivo inválido' }));
-        
-        setFiles(prev => [...prev, ...prepared, ...preparedRejected]);
+        const prepared = accepted.map(f => ({ file: f, id: uniqueId(), progress: 0, status: 'pending' }));
+        const rejectedFormatted = rejected.map(r => ({ file: r.file, id: uniqueId(), progress: 0, status: 'error', error: 'Tipo de arquivo inválido' }));
+        setFiles(prev => [...prev, ...prepared, ...rejectedFormatted]);
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] } });
@@ -87,8 +84,21 @@ const Upload = () => {
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
                         setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, progress, status: 'uploading' } : f));
                     },
+                    // LÓGICA DE ERRO APRIMORADA
                     (error) => {
-                        setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, status: 'error', error: 'Falha no upload' } : f));
+                        let errorMessage = 'Falha no upload';
+                        switch (error.code) {
+                            case 'storage/unauthorized':
+                                errorMessage = 'Permissão negada.';
+                                break;
+                            case 'storage/canceled':
+                                errorMessage = 'Upload cancelado.';
+                                break;
+                            case 'storage/unknown':
+                                errorMessage = 'Erro desconhecido.';
+                                break;
+                        }
+                        setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, status: 'error', error: errorMessage } : f));
                         reject(error);
                     },
                     async () => {
@@ -112,6 +122,7 @@ const Upload = () => {
         <div>
             <h1 className="text-4xl font-bold mb-6 font-bebas-neue text-primary">Upload de Mídia</h1>
             <Card>
+                {/* O restante do JSX permanece o mesmo */}
                 <div className="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-gray-700">
                     <label htmlFor="event" className="font-semibold text-lg">Enviar para o Evento:</label>
                     <select id="event" value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)} className="flex-grow bg-surface border border-gray-600 rounded-lg p-3 focus:ring-primary focus:border-primary">
@@ -125,7 +136,6 @@ const Upload = () => {
                     <p className="text-text-secondary">ou <span className="text-primary font-semibold">clique para selecionar</span></p>
                     <p className="text-xs text-text-secondary mt-2">Suporte: JPG, PNG, MP4</p>
                 </div>
-
                 {files.length > 0 && (
                     <div className="mt-6">
                         <h3 className="text-xl font-bebas-neue text-primary mb-4">Fila de Upload</h3>

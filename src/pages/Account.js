@@ -40,7 +40,6 @@ const Account = () => {
         }
     }, [user]);
 
-    // Função para máscara de WhatsApp
     const handleWhatsappChange = (e) => {
         let value = e.target.value.replace(/\D/g, '');
         value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
@@ -105,7 +104,6 @@ const Account = () => {
         }
     };
 
-    // Função para redefinir senha por e-mail
     const handleForgotPassword = () => {
         if (!user.email) return;
         sendPasswordResetEmail(auth, user.email)
@@ -132,7 +130,10 @@ const Account = () => {
                             <div><label className="block text-sm text-text-secondary mb-1">Apelido / Nome de Exibição</label><Input name="nickname" value={formData.nickname} onChange={handleFormChange} /></div>
                             <div><label className="block text-sm text-text-secondary mb-1">WhatsApp</label><Input name="whatsapp" value={formData.whatsapp} onChange={handleFormChange} /></div>
                         </div>
-                        <div className="text-right mt-4"><Button type="submit" disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar Informações'}</Button></div>
+                        {/* CORREÇÃO: Usando Flexbox para alinhar à direita */}
+                        <div className="flex justify-end mt-4">
+                            <Button type="submit" disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar Informações'}</Button>
+                        </div>
                     </form>
                 </Card>
 
@@ -143,7 +144,10 @@ const Account = () => {
                             <div><label className="block text-sm text-text-secondary mb-1">Preço Padrão - Foto (R$)</label><Input name="defaultPhotoPrice" type="number" value={formData.defaultPhotoPrice} onChange={handleFormChange} /></div>
                             <div><label className="block text-sm text-text-secondary mb-1">Preço Padrão - Vídeo (R$)</label><Input name="defaultVideoPrice" type="number" value={formData.defaultVideoPrice} onChange={handleFormChange} /></div>
                         </div>
-                         <div className="text-right mt-4"><Button type="submit" disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar Preços'}</Button></div>
+                         {/* CORREÇÃO: Usando Flexbox para alinhar à direita */}
+                         <div className="flex justify-end mt-4">
+                            <Button type="submit" disabled={isLoading}>{isLoading ? 'Salvando...' : 'Salvar Preços'}</Button>
+                        </div>
                     </form>
                 </Card>
 

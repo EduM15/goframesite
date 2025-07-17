@@ -1,41 +1,60 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
+import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+
 import MediaCard from '../components/MediaCard';
 import MediaViewerModal from '../components/MediaViewerModal';
 import Button from '../components/ui/Button';
 import Icon from '@mdi/react';
 import { mdiViewGrid, mdiViewGridCompact } from '@mdi/js';
 
-// DADOS MOCK RESTAURADOS
-const MOCK_EVENT_DATA = {
-  'trilha-do-desafio': {
-    name: 'Trilha do Desafio - Serra Azul',
-    date: '29 de Junho, 2025',
-    bannerUrl: 'https://images.pexels.com/photos/1162963/pexels-photo-1162963.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1',
-    media: [
-      { id: 'vid1', type: 'video', imageUrl: 'https://images.pexels.com/photos/1799236/pexels-photo-1799236.jpeg?auto=compress&cs=tinysrgb&w=600', price: 29.90, creatorName: 'DroneMaster Edu' },
-      { id: 'img1', type: 'photo', imageUrl: 'https://images.pexels.com/photos/21014/pexels-photo.jpg?auto=compress&cs=tinysrgb&w=600', price: 19.90, creatorName: 'DroneMaster Edu' },
-      { id: 'img2', type: 'photo', imageUrl: 'https://images.pexels.com/photos/1200632/pexels-photo-1200632.jpeg?auto=compress&cs=tinysrgb&w=600', price: 19.90, creatorName: 'DroneMaster Edu' },
-      { id: 'vid2', type: 'video', imageUrl: 'https://images.pexels.com/photos/3807282/pexels-photo-3807282.jpeg?auto=compress&cs=tinysrgb&w=600', price: 29.90, creatorName: 'DroneMaster Edu' },
-      { id: 'img3', type: 'photo', imageUrl: 'https://images.pexels.com/photos/1414643/pexels-photo-1414643.jpeg?auto=compress&cs=tinysrgb&w=600', price: 19.90, creatorName: 'DroneMaster Edu' },
-    ]
-  }
-};
-
 const EventPage = () => {
   const { eventId } = useParams();
   const [event, setEvent] = useState(null);
+  const [mediaItems, setMediaItems] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
   const [viewingMedia, setViewingMedia] = useState(null);
   const [viewMode, setViewMode] = useState('large');
 
   useEffect(() => {
-    setEvent(MOCK_EVENT_DATA[eventId] || null);
+    if (!eventId) return;
+    setLoading(true);
+
+    // 1. Busca os detalhes do evento
+    const eventDocRef = doc(db, 'events', eventId);
+    getDoc(eventDocRef).then(docSnap => {
+      if (docSnap.exists()) {
+        setEvent({ id: docSnap.id, ...docSnap.data() });
+      } else {
+        console.error("No such event!");
+      }
+    });
+
+    // 2. Busca as mídias associadas a este evento em tempo real
+    const mediaQuery = query(collection(db, "media"), where("eventId", "==", eventId));
+    const unsubscribe = onSnapshot(mediaQuery, (snapshot) => {
+      const mediaData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setMediaItems(mediaData);
+      setLoading(false);
+    }, (error) => {
+      console.error("Error fetching media:", error);
+      setLoading(false);
+    });
+
+    return () => unsubscribe(); // Limpa a escuta quando o componente é desmontado
   }, [eventId]);
 
-  const filteredMedia = event?.media.filter(m => (filter === 'all' ? true : m.type === filter));
+  const filteredMedia = mediaItems.filter(m => (filter === 'all' ? true : m.type.startsWith(filter)));
 
-  if (!event) { return <div className="text-center p-10"><h1>Evento não encontrado.</h1></div>; }
+  if (loading) {
+    return <div className="text-center p-10"><h1>Carregando evento...</h1></div>;
+  }
+
+  if (!event) {
+    return <div className="text-center p-10"><h1>Evento não encontrado.</h1></div>;
+  }
 
   const gridClasses = {
     large: 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4',
@@ -46,10 +65,10 @@ const EventPage = () => {
     <div>
       <section 
         className="text-center p-10 bg-cover bg-center" 
-        style={{backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${event.bannerUrl})`}}
+        style={{backgroundImage: `linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url(${event.thumbnailUrl || 'https://images.pexels.com/photos/1162963/pexels-photo-1162963.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1'})`}}
       >
         <h1 className="font-bebas-neue text-6xl">{event.name}</h1>
-        <p className="text-text-secondary text-xl">{event.date}</p>
+        <p className="text-text-secondary text-xl">{new Date(event.date).toLocaleDateString('pt-BR', { timeZone: 'UTC' })}</p>
       </section>
 
       <div className="bg-background py-3 px-5 border-b border-surface sticky top-[88px] z-10">
@@ -72,9 +91,15 @@ const EventPage = () => {
 
       <main className="p-8">
         <div className={`container mx-auto grid ${gridClasses[viewMode]} gap-6`}>
-          {filteredMedia?.map(media => (
-            <MediaCard key={media.id} media={media} onImageClick={setViewingMedia} />
-          ))}
+          {filteredMedia.length > 0 ? (
+            filteredMedia.map(media => (
+              <MediaCard key={media.id} media={media} onImageClick={setViewingMedia} />
+            ))
+          ) : (
+            <div className="col-span-full text-center text-text-secondary py-10">
+              Nenhuma mídia encontrada para este filtro.
+            </div>
+          )}
         </div>
       </main>
 

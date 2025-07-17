@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, NavLink } from 'react-router-dom';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
-import { useCart } from '../../contexts/CartContext'; // <<< ESTA É A LINHA QUE FALTAVA
+import { useCart } from '../../contexts/CartContext';
 import Icon from '@mdi/react';
 import { mdiCartOutline } from '@mdi/js';
 
@@ -18,6 +18,7 @@ const PublicHeader = () => {
           <span className="text-text-main">Frame</span>
         </Link>
 
+        {/* Links de navegação */}
         <nav className="hidden md:flex items-center gap-8">
           <NavLink to="/about" className={({ isActive }) => `hover:text-primary ${isActive ? 'text-primary' : ''}`}>
             Quem Somos
@@ -39,9 +40,10 @@ const PublicHeader = () => {
                </span>
              )}
           </Link>
+          
           {user ? (
             <div className="flex items-center gap-4">
-              <span className="text-text-secondary">Olá!</span>
+              <span className="text-text-secondary">Olá, {user.nickname || user.email}!</span>
               <Link to="/creator">
                 <Button>Meu Painel</Button>
               </Link>

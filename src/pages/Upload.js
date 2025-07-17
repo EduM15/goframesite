@@ -18,10 +18,10 @@ const FileQueueItem = ({ file, onRemove }) => {
 
     return (
         <div className={`flex items-center bg-background p-3 rounded-lg gap-4 ${isError ? 'border border-danger' : ''}`}>
-            <div className="flex-shrink-0 bg-surface p-2 rounded-md"><Icon path={file.type?.startsWith('video/') ? mdiVideoOutline : mdiFileImageOutline} size={1.5} className="text-text-secondary" /></div>
+            <div className="flex-shrink-0 bg-surface p-2 rounded-md"><Icon path={file.file.type?.startsWith('video/') ? mdiVideoOutline : mdiFileImageOutline} size={1.5} className="text-text-secondary" /></div>
             <div className="flex-grow overflow-hidden">
-                <p className="truncate font-semibold">{file.name}</p>
-                <p className="text-sm text-text-secondary">{isError ? error : `${(file.size / 1024 / 1024).toFixed(2)} MB`}</p>
+                <p className="truncate font-semibold">{file.file.name}</p>
+                <p className="text-sm text-text-secondary">{isError ? error : `${(file.file.size / 1024 / 1024).toFixed(2)} MB`}</p>
             </div>
             <div className="w-1/3 mx-4">
                 {!isError && <div className="w-full bg-surface rounded-full h-2.5"><div className={`h-2.5 rounded-full transition-all duration-300 ${isSuccess ? 'bg-success' : 'bg-primary'}`} style={{ width: `${progress || 0}%` }}></div></div>}
@@ -57,11 +57,15 @@ const Upload = () => {
         return unsub;
     }, [user, selectedEvent]);
 
-    const onDrop = useCallback((accepted, rejected) => {
+    const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
         const uniqueId = () => `file_${Date.now()}_${Math.random()}`;
-        const prepared = accepted.map(f => ({ file: f, id: uniqueId(), progress: 0, status: 'pending' }));
-        const rejected = rejected.map(r => ({ file: r.file, id: uniqueId(), progress: 0, status: 'error', error: 'Tipo de arquivo inválido' }));
-        setFiles(prev => [...prev, ...prepared, ...rejected]);
+        
+        const prepared = acceptedFiles.map(f => ({ file: f, id: uniqueId(), progress: 0, status: 'pending' }));
+        
+        // CORREÇÃO: Renomeada a variável para evitar conflito com o parâmetro 'rejectedFiles'
+        const preparedRejected = rejectedFiles.map(r => ({ file: r.file, id: uniqueId(), progress: 0, status: 'error', error: 'Tipo de arquivo inválido' }));
+        
+        setFiles(prev => [...prev, ...prepared, ...preparedRejected]);
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] } });
@@ -121,12 +125,13 @@ const Upload = () => {
                     <p className="text-text-secondary">ou <span className="text-primary font-semibold">clique para selecionar</span></p>
                     <p className="text-xs text-text-secondary mt-2">Suporte: JPG, PNG, MP4</p>
                 </div>
+
                 {files.length > 0 && (
                     <div className="mt-6">
                         <h3 className="text-xl font-bebas-neue text-primary mb-4">Fila de Upload</h3>
                         <div className="space-y-3">
                             {files.map((queueItem) => (
-                                <FileQueueItem key={queueItem.id} file={queueItem.file} status={queueItem.status} progress={queueItem.progress} error={queueItem.error} onRemove={() => handleRemoveFile(queueItem)} />
+                                <FileQueueItem key={queueItem.id} file={queueItem} onRemove={handleRemoveFile} />
                             ))}
                         </div>
                         <div className="flex justify-end mt-6">

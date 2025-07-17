@@ -10,32 +10,27 @@ import Button from '../components/ui/Button';
 import Icon from '@mdi/react';
 import { mdiUpload, mdiFileCheck, mdiAlertCircle, mdiFileImageOutline, mdiVideoOutline, mdiCloseCircle } from '@mdi/js';
 
-// Componente para um único item na fila de upload
-const FileQueueItem = ({ file, progress, status, error = '', onRemove }) => {
+const FileQueueItem = ({ file, onRemove }) => {
+    const { status, error, progress } = file;
     const isError = status === 'error';
     const isSuccess = status === 'success';
     const canBeRemoved = status === 'pending' || isError;
 
     return (
         <div className={`flex items-center bg-background p-3 rounded-lg gap-4 ${isError ? 'border border-danger' : ''}`}>
-            <div className="flex-shrink-0 bg-surface p-2 rounded-md"><Icon path={file.type.startsWith('video/') ? mdiVideoOutline : mdiFileImageOutline} size={1.5} className="text-text-secondary" /></div>
+            <div className="flex-shrink-0 bg-surface p-2 rounded-md"><Icon path={file.type?.startsWith('video/') ? mdiVideoOutline : mdiFileImageOutline} size={1.5} className="text-text-secondary" /></div>
             <div className="flex-grow overflow-hidden">
                 <p className="truncate font-semibold">{file.name}</p>
                 <p className="text-sm text-text-secondary">{isError ? error : `${(file.size / 1024 / 1024).toFixed(2)} MB`}</p>
             </div>
             <div className="w-1/3 mx-4">
-                {!isError && (<div className="w-full bg-surface rounded-full h-2.5"><div className={`h-2.5 rounded-full transition-all duration-300 ${isSuccess ? 'bg-success' : 'bg-primary'}`} style={{ width: `${progress}%` }}></div></div>)}
+                {!isError && <div className="w-full bg-surface rounded-full h-2.5"><div className={`h-2.5 rounded-full transition-all duration-300 ${isSuccess ? 'bg-success' : 'bg-primary'}`} style={{ width: `${progress || 0}%` }}></div></div>}
             </div>
             <div className="w-32 text-right flex items-center justify-end gap-2">
                 {isSuccess && <Icon path={mdiFileCheck} size={1} className="text-success" />}
                 {isError && <Icon path={mdiAlertCircle} size={1} className="text-danger" />}
                 <span className={`flex-grow text-center ${isSuccess ? 'text-success' : ''} ${isError ? 'text-danger' : 'text-text-secondary'}`}>{status}</span>
-                {/* Botão de Remover */}
-                {canBeRemoved && (
-                    <button onClick={() => onRemove(file)} className="text-text-secondary hover:text-danger" title="Remover da fila">
-                        <Icon path={mdiCloseCircle} size={0.9} />
-                    </button>
-                )}
+                {canBeRemoved && <button onClick={() => onRemove(file)} className="text-text-secondary hover:text-danger" title="Remover da fila"><Icon path={mdiCloseCircle} size={0.9} /></button>}
             </div>
         </div>
     );
@@ -61,65 +56,52 @@ const Upload = () => {
         });
         return unsub;
     }, [user, selectedEvent]);
-    
-    // CORREÇÃO: Adicionando um ID único a cada arquivo para evitar erros de renderização.
+
     const onDrop = useCallback((accepted, rejected) => {
         const uniqueId = () => `file_${Date.now()}_${Math.random()}`;
-
-        const prepared = accepted.map(f => Object.assign(f, {
-            id: uniqueId(), progress: 0, status: 'pending'
-        }));
-        const rejectedFormatted = rejected.map(r => Object.assign(r.file, {
-            id: uniqueId(), progress: 0, status: 'error', error: 'Tipo de arquivo inválido'
-        }));
-        setFiles(prev => [...prev, ...prepared, ...rejectedFormatted]);
+        const prepared = accepted.map(f => ({ file: f, id: uniqueId(), progress: 0, status: 'pending' }));
+        const rejected = rejected.map(r => ({ file: r.file, id: uniqueId(), progress: 0, status: 'error', error: 'Tipo de arquivo inválido' }));
+        setFiles(prev => [...prev, ...prepared, ...rejected]);
     }, []);
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] } });
     
-    // NOVA FUNÇÃO: Para remover um arquivo da fila.
-    const handleRemoveFile = (fileToRemove) => {
-        setFiles(prev => prev.filter(file => file.id !== fileToRemove.id));
-    };
+    const handleRemoveFile = (fileToRemove) => setFiles(prev => prev.filter(f => f.id !== fileToRemove.id));
 
     const handleUpload = async () => {
         const filesToUpload = files.filter(f => f.status === 'pending');
         if (!selectedEvent || filesToUpload.length === 0 || !user) return;
         setIsUploading(true);
-        const uploadPromises = filesToUpload.map(file => {
+        const uploadPromises = filesToUpload.map(queueItem => {
             return new Promise((resolve, reject) => {
+                const { file } = queueItem;
                 const storagePath = `media/${user.uid}/${selectedEvent}/${Date.now()}-${file.name}`;
                 const storageRef = ref(storage, storagePath);
                 const uploadTask = uploadBytesResumable(storageRef, file);
                 uploadTask.on('state_changed',
                     (snapshot) => {
                         const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                        setFiles(prev => prev.map(f => f.id === file.id ? { ...f, progress, status: 'uploading' } : f));
+                        setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, progress, status: 'uploading' } : f));
                     },
                     (error) => {
-                        setFiles(prev => prev.map(f => f.id === file.id ? { ...f, status: 'error', error: 'Falha no upload' } : f));
+                        setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, status: 'error', error: 'Falha no upload' } : f));
                         reject(error);
                     },
                     async () => {
                         try {
                             const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-                            await addDoc(collection(db, "media"), {
-                                eventId: selectedEvent, creatorId: user.uid, fileName: file.name,
-                                fileType: file.type, fileSize: file.size, storagePath: storagePath,
-                                downloadURL: downloadURL, status: 'processing', createdAt: serverTimestamp(),
-                            });
-                            setFiles(prev => prev.map(f => f.id === file.id ? { ...f, progress: 100, status: 'success' } : f));
+                            await addDoc(collection(db, "media"), { eventId: selectedEvent, creatorId: user.uid, fileName: file.name, fileType: file.type, fileSize: file.size, storagePath, downloadURL, status: 'processing', createdAt: serverTimestamp() });
+                            setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, progress: 100, status: 'success' } : f));
                             resolve();
                         } catch (dbError) {
-                            setFiles(prev => prev.map(f => f.id === file.id ? { ...f, status: 'error', error: 'Falha ao salvar dados' } : f));
+                            setFiles(prev => prev.map(f => f.id === queueItem.id ? { ...f, status: 'error', error: 'Falha ao salvar dados' } : f));
                             reject(dbError);
                         }
                     }
                 );
             });
         });
-        try { await Promise.allSettled(uploadPromises); }
-        finally { setIsUploading(false); }
+        try { await Promise.allSettled(uploadPromises); } finally { setIsUploading(false); }
     };
 
     return (
@@ -139,13 +121,12 @@ const Upload = () => {
                     <p className="text-text-secondary">ou <span className="text-primary font-semibold">clique para selecionar</span></p>
                     <p className="text-xs text-text-secondary mt-2">Suporte: JPG, PNG, MP4</p>
                 </div>
-
                 {files.length > 0 && (
                     <div className="mt-6">
                         <h3 className="text-xl font-bebas-neue text-primary mb-4">Fila de Upload</h3>
                         <div className="space-y-3">
-                            {files.map((file) => (
-                                <FileQueueItem key={file.id} file={file} progress={file.progress} status={file.status} error={file.error} onRemove={handleRemoveFile} />
+                            {files.map((queueItem) => (
+                                <FileQueueItem key={queueItem.id} file={queueItem.file} status={queueItem.status} progress={queueItem.progress} error={queueItem.error} onRemove={() => handleRemoveFile(queueItem)} />
                             ))}
                         </div>
                         <div className="flex justify-end mt-6">

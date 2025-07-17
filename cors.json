@@ -2,7 +2,7 @@
   {
     "origin": [
       "http://localhost:3000",
-      "https://goframesiteedum15.vercel.app/"
+      "https://goframesiteedum15.vercel.app"
     ],
     "method": [
       "GET",

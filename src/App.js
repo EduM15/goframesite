@@ -13,7 +13,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import EventPage from './pages/EventPage';
-import CartPage from './pages/CartPage'; // Importação da página real do carrinho
+import CartPage from './pages/CartPage';
 
 // Páginas do Criador
 import Overview from './pages/Overview';
@@ -21,7 +21,7 @@ import MyEvents from './pages/MyEvents';
 import Upload from './pages/Upload';
 import Financial from './pages/Financial';
 import Account from './pages/Account';
-
+import ActivityLog from './pages/ActivityLog'; // <-- Importação da nova página
 
 function App() {
   const { user, loading } = useAuth();
@@ -39,27 +39,20 @@ function App() {
         <Route path="/cart" element={<CartPage />} />
       </Route>
 
-      {/* Rota de Autenticação (sem layout principal) */}
+      {/* Rota de Autenticação */}
       <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
 
       {/* Rotas Protegidas do Criador */}
-      <Route 
-        path="/creator" 
-        element={
-          <ProtectedRoute>
-            <CreatorLayout />
-          </ProtectedRoute>
-        }
-      >
+      <Route path="/creator" element={<ProtectedRoute><CreatorLayout /></ProtectedRoute>}>
         <Route index element={<Overview />} />
         <Route path="events" element={<MyEvents />} />
         <Route path="upload" element={<Upload />} />
         <Route path="financial" element={<Financial />} />
         <Route path="account" element={<Account />} />
+        <Route path="activity" element={<ActivityLog />} /> {/* <-- Nova rota adicionada */}
         <Route path="*" element={<Navigate to="/creator" />} />
       </Route>
       
-      {/* Fallback para qualquer outra rota não encontrada */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

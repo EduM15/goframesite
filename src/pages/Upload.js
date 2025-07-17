@@ -10,6 +10,7 @@ import Button from '../components/ui/Button';
 import Icon from '@mdi/react';
 import { mdiUpload, mdiFileCheck, mdiAlertCircle, mdiFileImageOutline, mdiVideoOutline } from '@mdi/js';
 
+// Componente FileQueueItem (sem alterações)
 const FileQueueItem = ({ file, progress, status, error = '' }) => {
     const isError = status === 'error';
     const isSuccess = status === 'success';
@@ -42,9 +43,15 @@ const Upload = () => {
     useEffect(() => {
         if (!user) return;
         const q = query(collection(db, "events"), where("creatorId", "==", user.uid), orderBy("createdAt", "desc"));
-        const unsub = onSnapshot(q, (snap) => setEvents(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+        const unsub = onSnapshot(q, (snap) => {
+            const eventsData = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            setEvents(eventsData);
+            if (eventsData.length > 0 && !selectedEvent) {
+                setSelectedEvent(eventsData[0].id);
+            }
+        });
         return unsub;
-    }, [user]);
+    }, [user, selectedEvent]);
 
     const onDrop = useCallback((accepted, rejected) => {
         const prepared = accepted.map(f => Object.assign(f, { progress: 0, status: 'pending' }));
@@ -54,52 +61,61 @@ const Upload = () => {
 
     const { getRootProps, getInputProps, isDragActive } = useDropzone({ onDrop, accept: { 'image/jpeg': [], 'image/png': [], 'video/mp4': [] } });
 
-    const handleUpload = () => {
-        if (!selectedEvent || files.filter(f => f.status === 'pending').length === 0) return;
-        setIsUploading(true);
-        const pendingFiles = files.filter(f => f.status === 'pending');
-        
-        pendingFiles.forEach(file => {
-            const storagePath = `media/${user.uid}/${selectedEvent}/${file.name}`;
-            const storageRef = ref(storage, storagePath);
-            const uploadTask = uploadBytesResumable(storageRef, file);
+    // LÓGICA DE UPLOAD CORRIGIDA
+    const handleUpload = async () => {
+        const filesToUpload = files.filter(f => f.status === 'pending');
+        if (!selectedEvent || filesToUpload.length === 0 || !user) return;
 
-            uploadTask.on('state_changed',
-                (snapshot) => { // Monitora o progresso
-                    const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-                    setFiles(prev => prev.map(f => f.name === file.name ? { ...f, progress, status: 'uploading' } : f));
-                },
-                (error) => { // Lida com erros
-                    setFiles(prev => prev.map(f => f.name === file.name ? { ...f, status: 'error', error: 'Falha no upload' } : f));
-                    setIsUploading(false);
-                },
-                () => { // Lida com o sucesso do upload
-                    getDownloadURL(uploadTask.snapshot.ref).then(async (downloadURL) => {
-                        // Salva os metadados no Firestore
-                        await addDoc(collection(db, "media"), {
-                            eventId: selectedEvent,
-                            creatorId: user.uid,
-                            fileName: file.name,
-                            fileType: file.type,
-                            fileSize: file.size,
-                            storagePath: storagePath,
-                            downloadURL: downloadURL,
-                            status: 'processing', // Status inicial, aguardando marca d'água
-                            createdAt: serverTimestamp(),
-                        });
-                        setFiles(prev => prev.map(f => f.name === file.name ? { ...f, progress: 100, status: 'success' } : f));
-                    });
-                }
-            );
+        setIsUploading(true);
+
+        // Criamos uma "promessa" para cada upload para que possamos esperar que todos terminem
+        const uploadPromises = filesToUpload.map(file => {
+            return new Promise((resolve, reject) => {
+                const storagePath = `media/${user.uid}/${selectedEvent}/${Date.now()}-${file.name}`;
+                const storageRef = ref(storage, storagePath);
+                const uploadTask = uploadBytesResumable(storageRef, file);
+
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        setFiles(prev => prev.map(f => f.path === file.path ? { ...f, progress, status: 'uploading' } : f));
+                    },
+                    (error) => {
+                        setFiles(prev => prev.map(f => f.path === file.path ? { ...f, status: 'error', error: 'Falha no upload' } : f));
+                        reject(error); // Rejeita a promessa em caso de erro
+                    },
+                    async () => {
+                        try {
+                            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                            await addDoc(collection(db, "media"), {
+                                eventId: selectedEvent, creatorId: user.uid, fileName: file.name,
+                                fileType: file.type, fileSize: file.size, storagePath: storagePath,
+                                downloadURL: downloadURL, status: 'processing', createdAt: serverTimestamp(),
+                            });
+                            setFiles(prev => prev.map(f => f.path === file.path ? { ...f, progress: 100, status: 'success' } : f));
+                            resolve(); // Resolve a promessa em caso de sucesso
+                        } catch (dbError) {
+                            setFiles(prev => prev.map(f => f.path === file.path ? { ...f, status: 'error', error: 'Falha ao salvar dados' } : f));
+                            reject(dbError);
+                        }
+                    }
+                );
+            });
         });
-        setIsUploading(false);
+
+        // Usamos Promise.allSettled para esperar que todos os uploads terminem (com sucesso ou falha)
+        try {
+            await Promise.allSettled(uploadPromises);
+        } finally {
+            // Apenas quando todos os uploads terminarem, redefinimos o estado de 'enviando'
+            setIsUploading(false);
+        }
     };
 
     return (
         <div>
             <h1 className="text-4xl font-bold mb-6 font-bebas-neue text-primary">Upload de Mídia</h1>
             <Card>
-                {/* ... (Seletor de Eventos - sem alteração) ... */}
                 <div className="flex flex-wrap items-center gap-4 mb-6 pb-6 border-b border-gray-700">
                     <label htmlFor="event" className="font-semibold text-lg">Enviar para o Evento:</label>
                     <select id="event" value={selectedEvent} onChange={(e) => setSelectedEvent(e.target.value)} className="flex-grow bg-surface border border-gray-600 rounded-lg p-3 focus:ring-primary focus:border-primary">
@@ -119,7 +135,7 @@ const Upload = () => {
                     <div className="mt-6">
                         <h3 className="text-xl font-bebas-neue text-primary mb-4">Fila de Upload</h3>
                         <div className="space-y-3">
-                            {files.map((file, index) => <FileQueueItem key={`${file.name}-${index}`} file={file} progress={file.progress} status={file.status} error={file.error} />)}
+                            {files.map((file, index) => <FileQueueItem key={`${file.path}-${index}`} file={file} progress={file.progress} status={file.status} error={file.error} />)}
                         </div>
                         <div className="flex justify-end mt-6">
                             <Button onClick={handleUpload} disabled={isUploading || files.filter(f => f.status === 'pending').length === 0}>

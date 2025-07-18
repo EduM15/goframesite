@@ -5,17 +5,19 @@ import { useAuth } from './hooks/useAuth';
 // Layouts
 import PublicLayout from './components/layouts/PublicLayout';
 import CreatorLayout from './components/layouts/CreatorLayout';
+import AdminLayout from './components/layouts/AdminLayout'; // <-- Importação
 
 // Componentes
 import ProtectedRoute from './components/ProtectedRoute';
+import AdminRoute from './components/AdminRoute'; // <-- Importação
 
-// Páginas
+// Páginas Públicas
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import EventPage from './pages/EventPage';
 import CartPage from './pages/CartPage';
-import AboutPage from './pages/AboutPage'; // <-- Importação
-import ContactPage from './pages/ContactPage'; // <-- Importação
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
 
 // Páginas do Criador
 import Overview from './pages/Overview';
@@ -25,6 +27,13 @@ import Financial from './pages/Financial';
 import Account from './pages/Account';
 import ActivityLog from './pages/ActivityLog';
 
+// Páginas do Admin
+import AdminDashboard from './pages/admin/AdminDashboard'; // <-- Importação
+// Placeholders para as outras páginas de admin
+const ManageCreators = () => <div>Gerenciar Criadores</div>;
+const Payouts = () => <div>Repasses</div>;
+const AdminSettings = () => <div>Configurações do Admin</div>;
+
 function App() {
   const { user, loading } = useAuth();
   if (loading) { return <div className="bg-background h-screen flex items-center justify-center text-text-main">Inicializando...</div>; }
@@ -33,24 +42,24 @@ function App() {
     <Routes>
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
-        <Route path="/event/:eventId" element={<EventPage />} />
-        <Route path="/cart" element={<CartPage />} />
-        <Route path="/about" element={<AboutPage />} /> {/* <-- Nova Rota */}
-        <Route path="/contact" element={<ContactPage />} /> {/* <-- Nova Rota */}
+        {/* ...outras rotas públicas... */}
       </Route>
 
       <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
 
       <Route path="/creator" element={<ProtectedRoute><CreatorLayout /></ProtectedRoute>}>
-        <Route index element={<Overview />} />
-        <Route path="events" element={<MyEvents />} />
-        <Route path="upload" element={<Upload />} />
-        <Route path="financial" element={<Financial />} />
-        <Route path="account" element={<Account />} />
-        <Route path="activity" element={<ActivityLog />} />
-        <Route path="*" element={<Navigate to="/creator" />} />
+        {/* ...rotas do criador... */}
       </Route>
       
+      {/* NOVAS ROTAS DO ADMIN */}
+      <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
+        <Route index element={<AdminDashboard />} />
+        <Route path="creators" element={<ManageCreators />} />
+        <Route path="payouts" element={<Payouts />} />
+        <Route path="settings" element={<AdminSettings />} />
+        <Route path="*" element={<Navigate to="/admin" />} />
+      </Route>
+
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

@@ -5,11 +5,11 @@ import { useAuth } from './hooks/useAuth';
 // Layouts
 import PublicLayout from './components/layouts/PublicLayout';
 import CreatorLayout from './components/layouts/CreatorLayout';
-import AdminLayout from './components/layouts/AdminLayout'; // <-- Importação
+import AdminLayout from './components/layouts/AdminLayout';
 
 // Componentes
 import ProtectedRoute from './components/ProtectedRoute';
-import AdminRoute from './components/AdminRoute'; // <-- Importação
+import AdminRoute from './components/AdminRoute';
 
 // Páginas Públicas
 import AuthPage from './pages/AuthPage';
@@ -28,8 +28,7 @@ import Account from './pages/Account';
 import ActivityLog from './pages/ActivityLog';
 
 // Páginas do Admin
-import AdminDashboard from './pages/admin/AdminDashboard'; // <-- Importação
-// Placeholders para as outras páginas de admin
+import AdminDashboard from './pages/admin/AdminDashboard';
 const ManageCreators = () => <div>Gerenciar Criadores</div>;
 const Payouts = () => <div>Repasses</div>;
 const AdminSettings = () => <div>Configurações do Admin</div>;
@@ -40,18 +39,30 @@ function App() {
 
   return (
     <Routes>
+      {/* --- ROTAS PÚBLICAS --- */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
-        {/* ...outras rotas públicas... */}
+        <Route path="/event/:eventId" element={<EventPage />} />
+        <Route path="/cart" element={<CartPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/contact" element={<ContactPage />} />
       </Route>
 
+      {/* --- ROTA DE AUTENTICAÇÃO --- */}
       <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
 
+      {/* --- ROTAS DO CRIADOR (PROTEGIDAS) --- */}
       <Route path="/creator" element={<ProtectedRoute><CreatorLayout /></ProtectedRoute>}>
-        {/* ...rotas do criador... */}
+        <Route index element={<Overview />} />
+        <Route path="events" element={<MyEvents />} />
+        <Route path="upload" element={<Upload />} />
+        <Route path="financial" element={<Financial />} />
+        <Route path="account" element={<Account />} />
+        <Route path="activity" element={<ActivityLog />} />
+        <Route path="*" element={<Navigate to="/creator" />} />
       </Route>
       
-      {/* NOVAS ROTAS DO ADMIN */}
+      {/* --- ROTAS DO ADMIN (PROTEGIDAS) --- */}
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="creators" element={<ManageCreators />} />
@@ -60,6 +71,7 @@ function App() {
         <Route path="*" element={<Navigate to="/admin" />} />
       </Route>
 
+      {/* --- ROTA CURINGA FINAL --- */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

@@ -14,6 +14,8 @@ import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import EventPage from './pages/EventPage';
 import CartPage from './pages/CartPage';
+import AboutPage from './pages/AboutPage'; // <-- Importação
+import ContactPage from './pages/ContactPage'; // <-- Importação
 
 // Páginas do Criador
 import Overview from './pages/Overview';
@@ -21,35 +23,31 @@ import MyEvents from './pages/MyEvents';
 import Upload from './pages/Upload';
 import Financial from './pages/Financial';
 import Account from './pages/Account';
-import ActivityLog from './pages/ActivityLog'; // <-- Importação da nova página
+import ActivityLog from './pages/ActivityLog';
 
 function App() {
   const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="bg-background h-screen flex items-center justify-center text-text-main">Inicializando...</div>;
-  }
+  if (loading) { return <div className="bg-background h-screen flex items-center justify-center text-text-main">Inicializando...</div>; }
 
   return (
     <Routes>
-      {/* Rotas Públicas */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/event/:eventId" element={<EventPage />} />
         <Route path="/cart" element={<CartPage />} />
+        <Route path="/about" element={<AboutPage />} /> {/* <-- Nova Rota */}
+        <Route path="/contact" element={<ContactPage />} /> {/* <-- Nova Rota */}
       </Route>
 
-      {/* Rota de Autenticação */}
       <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
 
-      {/* Rotas Protegidas do Criador */}
       <Route path="/creator" element={<ProtectedRoute><CreatorLayout /></ProtectedRoute>}>
         <Route index element={<Overview />} />
         <Route path="events" element={<MyEvents />} />
         <Route path="upload" element={<Upload />} />
         <Route path="financial" element={<Financial />} />
         <Route path="account" element={<Account />} />
-        <Route path="activity" element={<ActivityLog />} /> {/* <-- Nova rota adicionada */}
+        <Route path="activity" element={<ActivityLog />} />
         <Route path="*" element={<Navigate to="/creator" />} />
       </Route>
       

@@ -4,9 +4,9 @@ import { auth } from '../../config/firebase';
 import Icon from '@mdi/react';
 import { mdiViewDashboard, mdiCalendar, mdiUpload, mdiChartBar, mdiAccountCog, mdiLogout } from '@mdi/js';
 
-
 const Sidebar = () => {
   const handleLogout = async () => {
+    // Adicionaremos uma confirmação aqui no futuro, conforme a diretiva.
     await auth.signOut();
   };
 
@@ -21,6 +21,8 @@ const Sidebar = () => {
   const baseLinkClasses = "w-full flex items-center p-3 rounded-lg transition-colors duration-200 mb-2 text-left";
   const activeLinkClasses = "bg-primary text-text-main";
   const inactiveLinkClasses = "text-text-secondary hover:bg-surface hover:text-text-main";
+  // Nova classe para o botão de sair
+  const logoutClasses = "text-text-secondary hover:bg-danger hover:text-text-main";
 
   return (
     <div className="w-64 bg-background text-text-main flex flex-col p-4 border-r border-surface h-full">
@@ -42,7 +44,7 @@ const Sidebar = () => {
         ))}
       </nav>
       <div className="mt-auto">
-        <button onClick={handleLogout} className={`${baseLinkClasses} ${inactiveLinkClasses}`}>
+        <button onClick={handleLogout} className={`${baseLinkClasses} ${logoutClasses}`}>
           <Icon path={mdiLogout} size={1} className="mr-4" />
           <span className="font-poppins">Sair</span>
         </button>

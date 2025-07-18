@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
-import { collection, query, where, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { useParams, Link } from 'react-router-dom'; // <-- 'Link' foi adicionado aqui
+import { collection, query, where, onSnapshot, doc, getDoc, orderBy } from 'firebase/firestore'; // <-- 'orderBy' foi adicionado aqui
 import { db } from '../config/firebase';
 
 import MediaCard from '../components/MediaCard';
@@ -22,7 +22,6 @@ const EventPage = () => {
     if (!eventId) return;
     setLoading(true);
 
-    // 1. Busca os detalhes do evento
     const eventDocRef = doc(db, 'events', eventId);
     getDoc(eventDocRef).then(docSnap => {
       if (docSnap.exists()) {
@@ -33,7 +32,6 @@ const EventPage = () => {
       }
     });
 
-    // 2. Busca as mídias associadas a este evento em tempo real
     const mediaQuery = query(
       collection(db, "media"), 
       where("eventId", "==", eventId),
@@ -48,12 +46,11 @@ const EventPage = () => {
       setLoading(false);
     });
 
-    return () => unsubscribe(); // Limpa a escuta quando o componente é desmontado
+    return () => unsubscribe();
   }, [eventId]);
 
   const filteredMedia = mediaItems.filter(m => {
     if (filter === 'all') return true;
-    // Ajusta o filtro para checar o tipo de arquivo
     return m.fileType?.startsWith(filter);
   });
 
@@ -104,7 +101,7 @@ const EventPage = () => {
             filteredMedia.map(media => (
               <MediaCard 
                 key={media.id} 
-                media={{...media, imageUrl: media.downloadURL}} // Garante que MediaCard receba a prop correta
+                media={{...media, imageUrl: media.downloadURL, price: media.price || 19.90, creatorName: media.creatorNickname || 'GoFrame Creator'}} // Adicionados valores padrão
                 onImageClick={setViewingMedia} 
               />
             ))
@@ -119,7 +116,7 @@ const EventPage = () => {
 
       {viewingMedia && (
         <MediaViewerModal 
-          media={{...viewingMedia, imageUrl: viewingMedia.downloadURL}}
+          media={{...viewingMedia, imageUrl: viewingMedia.downloadURL, price: viewingMedia.price || 19.90, creatorName: viewingMedia.creatorNickname || 'GoFrame Creator'}} // Adicionados valores padrão
           onClose={() => setViewingMedia(null)}
         />
       )}

@@ -9,7 +9,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyDVj1Pg-51DgCNwi_jPckKwHRHzbXz0z9E",
   authDomain: "goframesite.firebaseapp.com",
   projectId: "goframesite",
-  storageBucket: "goframesite.appspot.com", // Corrigido para o formato padrão.
+  storageBucket: "goframesite.firebasestorage.app", // Corrigido para o formato padrão.
   messagingSenderId: "784091952713",
   appId: "1:784091952713:web:0eec3d538b5ea1c2633198",
   measurementId: "G-ZRR14VB8T4"

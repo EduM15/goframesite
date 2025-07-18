@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, orderBy, limit, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, limit, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import EventCard from '../components/EventCard';
 import Input from '../components/ui/Input';
@@ -12,39 +12,52 @@ const HomePage = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
 
-  // Busca os eventos do Firestore
   useEffect(() => {
-    const q = query(
+    const eventsQuery = query(
       collection(db, "events"), 
-      orderBy("date", "desc"), // Ordena pelos mais recentes
-      limit(60) // Limita a 60 eventos (3 colunas x 20 linhas)
+      orderBy("date", "desc"),
+      limit(60)
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    const unsubscribe = onSnapshot(eventsQuery, async (snapshot) => {
       const eventsData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setEvents(eventsData);
+      
+      // Para cada evento, buscar o apelido do criador
+      const eventsWithCreators = await Promise.all(
+        eventsData.map(async (event) => {
+          if (!event.creatorId) return event;
+          const creatorDoc = await getDoc(doc(db, 'creators', event.creatorId));
+          const creatorNickname = creatorDoc.exists() ? creatorDoc.data().nickname : 'Anônimo';
+          return { ...event, creatorNickname };
+        })
+      );
+      
+      setEvents(eventsWithCreators);
       setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  // Filtra os eventos com base no termo de busca
   const filteredEvents = events.filter(event => 
-    event.name.toLowerCase().includes(searchTerm.toLowerCase())
+    event.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    event.creatorNickname?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
     <div>
       <section className="relative h-[75vh] flex justify-center items-center text-center overflow-hidden">
-        {/* ... (vídeo de fundo) ... */}
+        <video autoPlay muted loop playsInline id="bg-video" className="absolute top-1/2 left-1/2 min-w-full min-h-full w-auto h-auto -translate-x-1/2 -translate-y-1/2 object-cover">
+          <source src="https://www.coverr.co/s3_videos/mp4/Motorbike.mp4" type="video/mp4" />
+        </video>
+        <div className="absolute top-0 left-0 w-full h-full bg-black/60 z-0"></div>
         <div className="z-10 text-white px-4">
           <h1 className="font-bebas-neue text-6xl md:text-8xl tracking-wider">REVIVA A EMOÇÃO DA TRILHA</h1>
           <p className="text-lg md:text-xl text-text-secondary mb-8">Encontre os vídeos e fotos da sua aventura.</p>
           <div className="flex justify-center max-w-2xl mx-auto">
             <Input 
               type="text"
-              placeholder="Digite o nome do evento..."
+              placeholder="Digite o nome do evento ou criador..."
               className="rounded-r-none border-r-0"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
@@ -64,9 +77,11 @@ const HomePage = () => {
             <p className="text-text-secondary">Carregando eventos...</p>
           ) : (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredEvents.map(event => (
+              {filteredEvents.length > 0 ? filteredEvents.map(event => (
                 <EventCard key={event.id} event={event} />
-              ))}
+              )) : (
+                <p className="text-text-secondary col-span-full">Nenhum evento encontrado.</p>
+              )}
             </div>
           )}
         </div>

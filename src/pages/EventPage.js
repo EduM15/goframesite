@@ -29,11 +29,16 @@ const EventPage = () => {
         setEvent({ id: docSnap.id, ...docSnap.data() });
       } else {
         console.error("No such event!");
+        setLoading(false);
       }
     });
 
     // 2. Busca as mídias associadas a este evento em tempo real
-    const mediaQuery = query(collection(db, "media"), where("eventId", "==", eventId));
+    const mediaQuery = query(
+      collection(db, "media"), 
+      where("eventId", "==", eventId),
+      orderBy("createdAt", "desc")
+    );
     const unsubscribe = onSnapshot(mediaQuery, (snapshot) => {
       const mediaData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setMediaItems(mediaData);
@@ -46,7 +51,11 @@ const EventPage = () => {
     return () => unsubscribe(); // Limpa a escuta quando o componente é desmontado
   }, [eventId]);
 
-  const filteredMedia = mediaItems.filter(m => (filter === 'all' ? true : m.type.startsWith(filter)));
+  const filteredMedia = mediaItems.filter(m => {
+    if (filter === 'all') return true;
+    // Ajusta o filtro para checar o tipo de arquivo
+    return m.fileType?.startsWith(filter);
+  });
 
   if (loading) {
     return <div className="text-center p-10"><h1>Carregando evento...</h1></div>;
@@ -76,7 +85,7 @@ const EventPage = () => {
           <div className="flex gap-2">
             <Button variant={filter === 'all' ? 'primary' : 'secondary'} onClick={() => setFilter('all')}>Ver Tudo</Button>
             <Button variant={filter === 'video' ? 'primary' : 'secondary'} onClick={() => setFilter('video')}>Apenas Vídeos</Button>
-            <Button variant={filter === 'photo' ? 'primary' : 'secondary'} onClick={() => setFilter('photo')}>Apenas Fotos</Button>
+            <Button variant={filter === 'image' ? 'primary' : 'secondary'} onClick={() => setFilter('image')}>Apenas Fotos</Button>
           </div>
           <div className="flex gap-2">
             <button title="Visão Ampla" onClick={() => setViewMode('large')} className={`p-2 rounded-md ${viewMode === 'large' ? 'bg-primary text-white' : 'bg-surface text-text-secondary'}`}>
@@ -93,11 +102,16 @@ const EventPage = () => {
         <div className={`container mx-auto grid ${gridClasses[viewMode]} gap-6`}>
           {filteredMedia.length > 0 ? (
             filteredMedia.map(media => (
-              <MediaCard key={media.id} media={media} onImageClick={setViewingMedia} />
+              <MediaCard 
+                key={media.id} 
+                media={{...media, imageUrl: media.downloadURL}} // Garante que MediaCard receba a prop correta
+                onImageClick={setViewingMedia} 
+              />
             ))
           ) : (
             <div className="col-span-full text-center text-text-secondary py-10">
-              Nenhuma mídia encontrada para este filtro.
+              <p className="text-lg">Nenhuma mídia encontrada para este evento.</p>
+              <p>Se você é o criador, <Link to="/creator/upload" className="text-primary underline">envie suas mídias agora</Link>.</p>
             </div>
           )}
         </div>
@@ -105,7 +119,7 @@ const EventPage = () => {
 
       {viewingMedia && (
         <MediaViewerModal 
-          media={viewingMedia} 
+          media={{...viewingMedia, imageUrl: viewingMedia.downloadURL}}
           onClose={() => setViewingMedia(null)}
         />
       )}

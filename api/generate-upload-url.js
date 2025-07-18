@@ -1,13 +1,17 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app';
 import { getStorage } from 'firebase-admin/storage';
 
-// Inicializa o Firebase Admin SDK
-// Ele lê as credenciais da variável de ambiente que configuramos na Vercel
+// Assegura que a inicialização ocorra apenas uma vez
 if (!getApps().length) {
-  initializeApp({
-    credential: cert(JSON.parse(process.env.SERVICE_ACCOUNT_JSON)),
-    storageBucket: "goframesite.appspot.com" // Use a URL .appspot.com aqui
-  });
+  try {
+    initializeApp({
+      credential: cert(JSON.parse(process.env.SERVICE_ACCOUNT_JSON)),
+      // CORREÇÃO: Apontando para o bucket correto que você confirmou
+      storageBucket: "goframesite.firebasestorage.app"
+    });
+  } catch (error) {
+    console.error("Firebase Admin Initialization Error:", error);
+  }
 }
 
 export default async function handler(req, res) {
@@ -18,14 +22,13 @@ export default async function handler(req, res) {
   try {
     const { fileName, fileType, creatorId, eventId } = req.body;
     if (!fileName || !fileType || !creatorId || !eventId) {
-      return res.status(400).json({ error: 'Informações faltando.' });
+      return res.status(400).json({ error: 'Informações faltando no pedido.' });
     }
 
     const bucket = getStorage().bucket();
     const filePath = `media/${creatorId}/${eventId}/${Date.now()}-${fileName}`;
     const file = bucket.file(filePath);
 
-    // Configura a URL assinada
     const options = {
       version: 'v4',
       action: 'write',
@@ -33,13 +36,12 @@ export default async function handler(req, res) {
       contentType: fileType,
     };
 
-    // Gera a URL
     const [url] = await file.getSignedUrl(options);
 
     res.status(200).json({ signedUrl: url, filePath: filePath });
 
   } catch (error) {
-    console.error('Erro ao gerar URL assinada:', error);
+    console.error('Erro ao gerar URL assinada:', error.message);
     res.status(500).json({ error: 'Não foi possível gerar a URL de upload.' });
   }
 }

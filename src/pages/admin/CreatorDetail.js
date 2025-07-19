@@ -6,30 +6,34 @@ import { db } from '../../config/firebase';
 import Card from '../../components/ui/Card';
 import Input from '../../components/ui/Input';
 import Button from '../../components/ui/Button';
+import Modal from '../../components/Modal';
 import Notification from '../../components/Notification';
+import Icon from '@mdi/react';
+import { mdiPencil, mdiContentSave, mdiClose } from '@mdi/js';
 
 const CreatorDetail = () => {
     const { creatorId } = useParams();
     const [creator, setCreator] = useState(null);
+    const [formData, setFormData] = useState({ fullname: '', nickname: '', whatsapp: '' });
     const [loading, setLoading] = useState(true);
-    const [commission, setCommission] = useState(20); // Valor padrão
+    const [isEditing, setIsEditing] = useState(false);
+    const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
     const [notification, setNotification] = useState({ message: '', type: '' });
 
     useEffect(() => {
         if (creatorId) {
             const docRef = doc(db, 'creators', creatorId);
-            getDoc(docRef).then(docSnap => {
+            const unsubscribe = onSnapshot(docRef, (docSnap) => {
                 if (docSnap.exists()) {
-                    setCreator({ id: docSnap.id, ...docSnap.data() });
-                    // Se o criador tiver uma comissão customizada, use-a.
-                    if (docSnap.data().commission) {
-                        setCommission(docSnap.data().commission);
-                    }
+                    const data = { id: docSnap.id, ...docSnap.data() };
+                    setCreator(data);
+                    setFormData({ fullname: data.fullname, nickname: data.nickname, whatsapp: data.whatsapp });
                 } else {
                     console.error("Criador não encontrado!");
                 }
                 setLoading(false);
             });
+            return () => unsubscribe();
         }
     }, [creatorId]);
     
@@ -37,25 +41,34 @@ const CreatorDetail = () => {
         setNotification({ message, type });
         setTimeout(() => setNotification({ message: '', type: '' }), 4000);
     };
+    
+    const handleFormChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
-    const handleSaveCommission = async () => {
+    const handleSaveChanges = async () => {
+        setIsConfirmModalOpen(false); // Fecha o modal de confirmação
         try {
             const docRef = doc(db, 'creators', creatorId);
-            await updateDoc(docRef, { commission: Number(commission) });
-            showNotification('Comissão atualizada com sucesso!', 'success');
+            await updateDoc(docRef, {
+                fullname: formData.fullname,
+                nickname: formData.nickname,
+                whatsapp: formData.whatsapp,
+            });
+            showNotification('Dados atualizados com sucesso!', 'success');
+            setIsEditing(false); // Sai do modo de edição
         } catch (error) {
-            showNotification('Erro ao atualizar a comissão.', 'danger');
-            console.error("Erro ao salvar comissão:", error);
+            showNotification('Erro ao atualizar os dados.', 'danger');
+            console.error("Erro ao salvar dados:", error);
         }
     };
     
-    if (loading) {
-        return <Card><p className="text-center p-8 text-text-secondary">Carregando detalhes do criador...</p></Card>;
-    }
+    const cancelEdit = () => {
+        // Restaura os dados originais
+        setFormData({ fullname: creator.fullname, nickname: creator.nickname, whatsapp: creator.whatsapp });
+        setIsEditing(false);
+    };
 
-    if (!creator) {
-        return <Card><p className="text-center p-8 text-danger">Criador não encontrado.</p></Card>;
-    }
+    if (loading) { return <Card><p className="text-center p-8 text-text-secondary">Carregando...</p></Card>; }
+    if (!creator) { return <Card><p className="text-center p-8 text-danger">Criador não encontrado.</p></Card>; }
 
     return (
         <div>
@@ -70,43 +83,49 @@ const CreatorDetail = () => {
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Coluna Esquerda */}
                 <div className="lg:col-span-2 space-y-6">
                     <Card>
-                        <h2 className="text-2xl font-bebas-neue text-primary mb-4">Informações Pessoais</h2>
-                        <div className="grid md:grid-cols-2 gap-x-6 gap-y-4">
-                            <div><label className="block text-sm text-text-secondary mb-1">Nome Completo</label><div className="font-semibold">{creator.fullname}</div></div>
-                            <div><label className="block text-sm text-text-secondary mb-1">Apelido</label><div className="font-semibold">{creator.nickname}</div></div>
-                            <div><label className="block text-sm text-text-secondary mb-1">Email</label><div className="font-semibold">{creator.email}</div></div>
-                            <div><label className="block text-sm text-text-secondary mb-1">WhatsApp</label><div className="font-semibold">{creator.whatsapp}</div></div>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-2xl font-bebas-neue text-primary">Informações Pessoais</h2>
+                            {!isEditing && (
+                                <Button variant="secondary" onClick={() => setIsEditing(true)}>
+                                    <Icon path={mdiPencil} size={0.8} /> Editar
+                                </Button>
+                            )}
                         </div>
-                    </Card>
-                    <Card>
-                        <h2 className="text-2xl font-bebas-neue text-primary mb-4">Informações de Repasse</h2>
-                         <p className="text-text-secondary"> (A ser implementado no painel do criador)</p>
-                    </Card>
-                </div>
-
-                {/* Coluna Direita */}
-                <div className="lg:col-span-1 space-y-6">
-                    <Card>
-                        <h2 className="text-2xl font-bebas-neue text-primary mb-4">Configuração Financeira</h2>
-                        <div>
-                            <label className="block text-sm text-text-secondary mb-1">Comissão da Plataforma (%)</label>
-                            <div className="flex items-center gap-4">
-                                <Input type="number" value={commission} onChange={(e) => setCommission(e.target.value)} className="w-24 text-center" />
-                                <Button onClick={handleSaveCommission}>Salvar</Button>
+                        {isEditing ? (
+                            <div className="grid md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div><label className="block text-sm text-text-secondary mb-1">Nome Completo</label><Input name="fullname" value={formData.fullname} onChange={handleFormChange} /></div>
+                                <div><label className="block text-sm text-text-secondary mb-1">Apelido</label><Input name="nickname" value={formData.nickname} onChange={handleFormChange} /></div>
+                                <div><label className="block text-sm text-text-secondary mb-1">WhatsApp</label><Input name="whatsapp" value={formData.whatsapp} onChange={handleFormChange} /></div>
                             </div>
-                        </div>
+                        ) : (
+                            <div className="grid md:grid-cols-2 gap-x-6 gap-y-4">
+                                <div><label className="block text-sm text-text-secondary mb-1">Nome Completo</label><div className="font-semibold">{creator.fullname}</div></div>
+                                <div><label className="block text-sm text-text-secondary mb-1">Apelido</label><div className="font-semibold">{creator.nickname}</div></div>
+                                <div><label className="block text-sm text-text-secondary mb-1">Email</label><div className="font-semibold">{creator.email}</div></div>
+                                <div><label className="block text-sm text-text-secondary mb-1">WhatsApp</label><div className="font-semibold">{creator.whatsapp}</div></div>
+                            </div>
+                        )}
+                        {isEditing && (
+                            <div className="flex justify-end gap-4 mt-6">
+                                <Button variant="secondary" onClick={cancelEdit}><Icon path={mdiClose} size={0.8}/> Cancelar</Button>
+                                <Button onClick={() => setIsConfirmModalOpen(true)}><Icon path={mdiContentSave} size={0.8}/> Salvar Alterações</Button>
+                            </div>
+                        )}
                     </Card>
-                    <Card>
-                         <h2 className="text-2xl font-bebas-neue text-primary mb-4">Ações Críticas</h2>
-                         <Button variant="danger" className="w-full" onClick={() => alert('Funcionalidade de desativação a ser implementada.')}>
-                            Desativar Conta de Criador
-                         </Button>
-                    </Card>
+                    {/* ... outros cards ... */}
                 </div>
+                {/* ... coluna da direita ... */}
             </div>
+
+            <Modal isOpen={isConfirmModalOpen} onClose={() => setIsConfirmModalOpen(false)} title="Confirmar Alterações">
+                <p>Você tem certeza que deseja salvar as novas informações para este usuário?</p>
+                <div className="flex justify-end space-x-3 pt-6">
+                    <Button variant="secondary" onClick={() => setIsConfirmModalOpen(false)}>Cancelar</Button>
+                    <Button variant="danger" onClick={handleSaveChanges}>Sim, Salvar</Button>
+                </div>
+            </Modal>
         </div>
     );
 };

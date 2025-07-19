@@ -29,6 +29,8 @@ import ActivityLog from './pages/ActivityLog';
 
 // Páginas do Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
+import AdminActivityLog from './pages/admin/AdminActivityLog'; // <-- Importação
+// Placeholders para as outras páginas de admin
 const ManageCreators = () => <div>Gerenciar Criadores</div>;
 const Payouts = () => <div>Repasses</div>;
 const AdminSettings = () => <div>Configurações do Admin</div>;
@@ -39,7 +41,6 @@ function App() {
 
   return (
     <Routes>
-      {/* --- ROTAS PÚBLICAS --- */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/event/:eventId" element={<EventPage />} />
@@ -48,10 +49,8 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
       </Route>
 
-      {/* --- ROTA DE AUTENTICAÇÃO --- */}
       <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
 
-      {/* --- ROTAS DO CRIADOR (PROTEGIDAS) --- */}
       <Route path="/creator" element={<ProtectedRoute><CreatorLayout /></ProtectedRoute>}>
         <Route index element={<Overview />} />
         <Route path="events" element={<MyEvents />} />
@@ -62,16 +61,15 @@ function App() {
         <Route path="*" element={<Navigate to="/creator" />} />
       </Route>
       
-      {/* --- ROTAS DO ADMIN (PROTEGIDAS) --- */}
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="creators" element={<ManageCreators />} />
         <Route path="payouts" element={<Payouts />} />
         <Route path="settings" element={<AdminSettings />} />
+        <Route path="activity" element={<AdminActivityLog />} /> {/* <-- Nova Rota */}
         <Route path="*" element={<Navigate to="/admin" />} />
       </Route>
 
-      {/* --- ROTA CURINGA FINAL --- */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

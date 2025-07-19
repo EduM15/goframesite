@@ -34,19 +34,16 @@ import AdminActivityLog from './pages/admin/AdminActivityLog';
 import ManageCreators from './pages/admin/ManageCreators';
 import CreatorDetail from './pages/admin/CreatorDetail';
 import ManageClients from './pages/admin/ManageClients';
-const Payouts = () => <div>Repasses</div>;
+import Payouts from './pages/admin/Payouts'; // <-- Importação do componente real
+// Placeholders
 const AdminSettings = () => <div>Configurações do Admin</div>;
 
 function App() {
   const { user, loading } = useAuth();
-
-  if (loading) {
-    return <div className="bg-background h-screen flex items-center justify-center text-text-main">Inicializando...</div>;
-  }
+  if (loading) { return <div className="bg-background h-screen flex items-center justify-center text-text-main">Inicializando...</div>; }
 
   return (
     <Routes>
-      {/* --- ROTAS PÚBLICAS --- */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<HomePage />} />
         <Route path="/event/:eventId" element={<EventPage />} />
@@ -55,11 +52,9 @@ function App() {
         <Route path="/contact" element={<ContactPage />} />
       </Route>
 
-      {/* --- ROTAS DE AUTENTICAÇÃO E CADASTRO --- */}
       <Route path="/creator-signup" element={<CreatorSignupPage />} />
       <Route path="/auth" element={user ? <Navigate to="/creator" /> : <AuthPage />} />
 
-      {/* --- ROTAS DO CRIADOR (PROTEGIDAS) --- */}
       <Route path="/creator" element={<ProtectedRoute><CreatorLayout /></ProtectedRoute>}>
         <Route index element={<Overview />} />
         <Route path="events" element={<MyEvents />} />
@@ -70,19 +65,17 @@ function App() {
         <Route path="*" element={<Navigate to="/creator" />} />
       </Route>
       
-      {/* --- ROTAS DO ADMIN (PROTEGIDAS) --- */}
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="creators" element={<ManageCreators />} />
         <Route path="creators/:creatorId" element={<CreatorDetail />} />
         <Route path="clients" element={<ManageClients />} />
-        <Route path="payouts" element={<Payouts />} />
+        <Route path="payouts" element={<Payouts />} /> {/* <-- Rota atualizada */}
         <Route path="settings" element={<AdminSettings />} />
         <Route path="activity" element={<AdminActivityLog />} />
         <Route path="*" element={<Navigate to="/admin" />} />
       </Route>
 
-      {/* --- ROTA CURINGA FINAL --- */}
       <Route path="*" element={<Navigate to="/" />} />
     </Routes>
   );

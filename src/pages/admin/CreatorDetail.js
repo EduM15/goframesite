@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { doc, getDoc, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore'; // <-- CORREÇÃO: 'onSnapshot' adicionado e 'getDoc' removido
 import { db } from '../../config/firebase';
 
 import Card from '../../components/ui/Card';
@@ -21,20 +21,28 @@ const CreatorDetail = () => {
     const [notification, setNotification] = useState({ message: '', type: '' });
 
     useEffect(() => {
-        if (creatorId) {
-            const docRef = doc(db, 'creators', creatorId);
-            const unsubscribe = onSnapshot(docRef, (docSnap) => {
-                if (docSnap.exists()) {
-                    const data = { id: docSnap.id, ...docSnap.data() };
-                    setCreator(data);
-                    setFormData({ fullname: data.fullname, nickname: data.nickname, whatsapp: data.whatsapp });
-                } else {
-                    console.error("Criador não encontrado!");
-                }
-                setLoading(false);
-            });
-            return () => unsubscribe();
+        if (!creatorId) {
+            setLoading(false);
+            return;
         }
+        
+        const docRef = doc(db, 'creators', creatorId);
+        const unsubscribe = onSnapshot(docRef, (docSnap) => {
+            if (docSnap.exists()) {
+                const data = { id: docSnap.id, ...docSnap.data() };
+                setCreator(data);
+                setFormData({ fullname: data.fullname || '', nickname: data.nickname || '', whatsapp: data.whatsapp || '' });
+            } else {
+                console.error("Criador não encontrado!");
+                setCreator(null);
+            }
+            setLoading(false);
+        }, (error) => {
+            console.error("Erro ao buscar criador:", error);
+            setLoading(false);
+        });
+
+        return () => unsubscribe(); // Limpa a escuta em tempo real ao sair da página
     }, [creatorId]);
     
     const showNotification = (message, type) => {
@@ -45,7 +53,7 @@ const CreatorDetail = () => {
     const handleFormChange = (e) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
 
     const handleSaveChanges = async () => {
-        setIsConfirmModalOpen(false); // Fecha o modal de confirmação
+        setIsConfirmModalOpen(false);
         try {
             const docRef = doc(db, 'creators', creatorId);
             await updateDoc(docRef, {
@@ -54,7 +62,7 @@ const CreatorDetail = () => {
                 whatsapp: formData.whatsapp,
             });
             showNotification('Dados atualizados com sucesso!', 'success');
-            setIsEditing(false); // Sai do modo de edição
+            setIsEditing(false);
         } catch (error) {
             showNotification('Erro ao atualizar os dados.', 'danger');
             console.error("Erro ao salvar dados:", error);
@@ -62,7 +70,6 @@ const CreatorDetail = () => {
     };
     
     const cancelEdit = () => {
-        // Restaura os dados originais
         setFormData({ fullname: creator.fullname, nickname: creator.nickname, whatsapp: creator.whatsapp });
         setIsEditing(false);
     };
@@ -114,7 +121,10 @@ const CreatorDetail = () => {
                             </div>
                         )}
                     </Card>
-                    {/* ... outros cards ... */}
+                     <Card>
+                        <h2 className="text-2xl font-bebas-neue text-primary mb-4">Informações de Repasse</h2>
+                         <p className="text-text-secondary"> (A ser implementado no painel do criador)</p>
+                    </Card>
                 </div>
                 {/* ... coluna da direita ... */}
             </div>

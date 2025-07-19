@@ -1,17 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
 import { auth } from '../../config/firebase';
+import Modal from '../Modal';
+import Button from '../ui/Button';
 import Icon from '@mdi/react';
 import { mdiViewDashboard, mdiCashMultiple, mdiAccountGroup, mdiCog, mdiLogout, mdiAccountSupervisor } from '@mdi/js';
 
 const AdminSidebar = () => {
-  const handleLogout = () => auth.signOut();
+  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+
+  const handleLogout = () => {
+    auth.signOut();
+    setIsLogoutModalOpen(false); // Fecha o modal após o logout
+  };
 
   const navItems = [
     { icon: mdiViewDashboard, label: 'Dashboard', path: '/admin' },
     { icon: mdiCashMultiple, label: 'Repasses', path: '/admin/payouts' },
     { icon: mdiAccountGroup, label: 'Gerenciar Criadores', path: '/admin/creators' },
-    { icon: mdiAccountSupervisor, label: 'Gerenciar Clientes', path: '/admin/clients' }, // <-- NOVO ITEM
+    { icon: mdiAccountSupervisor, label: 'Gerenciar Clientes', path: '/admin/clients' },
     { icon: mdiCog, label: 'Configurações', path: '/admin/settings' },
   ];
 
@@ -40,11 +47,21 @@ const AdminSidebar = () => {
         ))}
       </nav>
       <div className="mt-auto">
-        <button onClick={handleLogout} className={`${baseLinkClasses} ${logoutClasses}`}>
+        {/* O botão agora abre o modal em vez de fazer logout diretamente */}
+        <button onClick={() => setIsLogoutModalOpen(true)} className={`${baseLinkClasses} ${logoutClasses}`}>
           <Icon path={mdiLogout} size={1} className="mr-4" />
           <span className="font-poppins">Sair</span>
         </button>
       </div>
+
+      {/* Modal de Confirmação de Logout */}
+      <Modal isOpen={isLogoutModalOpen} onClose={() => setIsLogoutModalOpen(false)} title="Confirmar Saída">
+          <p>Você tem certeza que deseja sair da sua conta?</p>
+          <div className="flex justify-end space-x-3 pt-6">
+              <Button variant="secondary" onClick={() => setIsLogoutModalOpen(false)}>Cancelar</Button>
+              <Button variant="danger" onClick={handleLogout}>Confirmar Saída</Button>
+          </div>
+      </Modal>
     </div>
   );
 };

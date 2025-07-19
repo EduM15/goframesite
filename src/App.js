@@ -30,8 +30,9 @@ import ActivityLog from './pages/ActivityLog';
 // Páginas do Admin
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminActivityLog from './pages/admin/AdminActivityLog';
-import ManageCreators from './pages/admin/ManageCreators'; // <-- Importação
-import CreatorDetail from './pages/admin/CreatorDetail';   // <-- Importação
+import ManageCreators from './pages/admin/ManageCreators';
+import CreatorDetail from './pages/admin/CreatorDetail';
+import ManageClients from './pages/admin/ManageClients'; // <-- Importação
 // Placeholders
 const Payouts = () => <div>Repasses</div>;
 const AdminSettings = () => <div>Configurações do Admin</div>;
@@ -65,7 +66,8 @@ function App() {
       <Route path="/admin" element={<AdminRoute><AdminLayout /></AdminRoute>}>
         <Route index element={<AdminDashboard />} />
         <Route path="creators" element={<ManageCreators />} />
-        <Route path="creators/:creatorId" element={<CreatorDetail />} /> {/* <-- Nova Rota Dinâmica */}
+        <Route path="creators/:creatorId" element={<CreatorDetail />} />
+        <Route path="clients" element={<ManageClients />} /> {/* <-- Nova Rota */}
         <Route path="payouts" element={<Payouts />} />
         <Route path="settings" element={<AdminSettings />} />
         <Route path="activity" element={<AdminActivityLog />} />

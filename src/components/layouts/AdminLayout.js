@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, NavLink, Link } from 'react-router-dom';
 import { auth } from '../../config/firebase';
 import Icon from '@mdi/react';
-import { mdiViewDashboard, mdiCashMultiple, mdiAccountGroup, mdiCog, mdiLogout } from '@mdi/js';
+import { mdiViewDashboard, mdiCashMultiple, mdiAccountGroup, mdiCog, mdiLogout, mdiAccountSupervisor } from '@mdi/js';
 
 const AdminSidebar = () => {
   const handleLogout = () => auth.signOut();
@@ -11,6 +11,7 @@ const AdminSidebar = () => {
     { icon: mdiViewDashboard, label: 'Dashboard', path: '/admin' },
     { icon: mdiCashMultiple, label: 'Repasses', path: '/admin/payouts' },
     { icon: mdiAccountGroup, label: 'Gerenciar Criadores', path: '/admin/creators' },
+    { icon: mdiAccountSupervisor, label: 'Gerenciar Clientes', path: '/admin/clients' }, // <-- NOVO ITEM
     { icon: mdiCog, label: 'Configurações', path: '/admin/settings' },
   ];
 
